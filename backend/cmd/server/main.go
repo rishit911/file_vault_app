@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
+	"github.com/rishit911/file_vault_proj-backend/internal/server"
 )
 
 func main() {
@@ -22,6 +23,10 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
+
+	// Auth endpoints
+	mux.HandleFunc("/api/v1/auth/register", server.RegisterHandler(db.DB))
+	mux.HandleFunc("/api/v1/auth/login", server.LoginHandler(db.DB))
 
 	// simple server with read/write timeouts
 	srv := &http.Server{
