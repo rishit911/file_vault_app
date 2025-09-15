@@ -1,0 +1,22 @@
+# Node
+node_modules/
+dist/
+.env
+.env.local
+
+# Go
+/bin/
+/pkg/
+/vendor/
+**/go.sum
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# build
+/build
