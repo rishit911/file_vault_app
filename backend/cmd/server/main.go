@@ -37,6 +37,9 @@ func main() {
 	mux.HandleFunc("/api/v1/auth/register", server.RegisterHandler(db.DB))
 	mux.HandleFunc("/api/v1/auth/login", server.LoginHandler(db.DB))
 
+	// File endpoints
+	mux.HandleFunc("/api/v1/files/register", server.RegisterFileHandler(db.DB))
+
 	// simple server with read/write timeouts
 	srv := &http.Server{
 		Addr:         ":" + getEnv("PORT", "8080"),
