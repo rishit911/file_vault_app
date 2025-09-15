@@ -6,11 +6,20 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
 )
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(".env"); err != nil {
+		// Try loading from backend directory if running from root
+		if err := godotenv.Load("backend/.env"); err != nil {
+			log.Println("No .env file found, using environment variables")
+		}
+	}
+
 	// Connect to DB
 	log.Println("Connecting to DB...")
 	if err := db.ConnectFromEnv(); err != nil {

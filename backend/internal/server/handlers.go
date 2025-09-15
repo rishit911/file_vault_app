@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/rishit911/file_vault_proj-backend/internal/auth"
-	"github.com/rishit911/file_vault_proj-backend/internal/db"
 )
 
 type registerReq struct {
