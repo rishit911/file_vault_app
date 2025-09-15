@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: filevault_user
+      POSTGRES_PASSWORD: filevault_pass
+      POSTGRES_DB: filevault_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ../backend
+    depends_on:
+      - postgres
+    env_file:
+      - ../backend/.env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../backend:/app
+    command: ["./server"]
+
+  frontend:
+    build:
+      context: ../frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+
+volumes:
+  db_data:
