@@ -28,7 +28,7 @@ func RegisterFileHandler(db *sqlx.DB) http.HandlerFunc {
 		// check existing file_object by hash
 		fo, err := storage.FindFileObjectByHash(db, req.Hash)
 		if err != nil {
-			http.Error(w, "db error", http.StatusInternalServerError)
+			http.Error(w, "db error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

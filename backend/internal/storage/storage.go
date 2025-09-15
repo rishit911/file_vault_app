@@ -14,6 +14,7 @@ type FileObject struct {
 	SizeBytes   int64  `db:"size_bytes"`
 	MimeType    string `db:"mime_type"`
 	RefCount    int    `db:"ref_count"`
+	CreatedAt   string `db:"created_at"`
 }
 
 func FindFileObjectByHash(db *sqlx.DB, hash string) (*FileObject, error) {
