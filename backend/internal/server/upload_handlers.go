@@ -33,7 +33,7 @@ func copyFile(src, dst string) error {
 	return out.Sync()
 }
 
-func uploadHandler(db *sqlx.DB) http.HandlerFunc {
+func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Parse multipart form (limits total memory buffering for file headers)
 		if err := r.ParseMultipartForm(200 << 20); err != nil {
