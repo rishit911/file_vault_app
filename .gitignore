@@ -20,3 +20,4 @@ docker-compose.override.yml
 
 # build
 /build
+server.exe

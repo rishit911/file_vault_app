@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: filevault_user
-      POSTGRES_PASSWORD: Pguk2814@9R
-      POSTGRES_DB: filevault_db
+      POSTGRES_USER: ${POSTGRES_USER:-filevault_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filevault_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-filevault_db}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
