@@ -40,6 +40,7 @@ func main() {
 	// File endpoints
 	mux.HandleFunc("/api/v1/files/register", server.RegisterFileHandler(db.DB))
 	mux.HandleFunc("/api/v1/files/upload", server.AuthMiddleware(server.UploadHandler(db.DB)))
+	mux.HandleFunc("/api/v1/files", server.AuthMiddleware(server.ListFilesHandler(db.DB)))
 
 	// simple server with read/write timeouts
 	srv := &http.Server{

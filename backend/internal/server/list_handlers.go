@@ -19,7 +19,7 @@ type fileListItem struct {
 	StorageSavedBytes int64  `json:"storage_saved_bytes"`
 }
 
-func listFilesHandler(db *sqlx.DB) http.HandlerFunc {
+func ListFilesHandler(db *sqlx.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := GetUserIDFromContext(r)
 		if userID == "" {
