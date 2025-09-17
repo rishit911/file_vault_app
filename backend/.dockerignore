@@ -1,0 +1,31 @@
+# Ignore development files
+.env
+.env.local
+.env.example
+
+# Ignore build artifacts
+server.exe
+*.exe
+*.exe~
+
+# Ignore temporary files
+tmp/
+temp/
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore documentation
+README.md
+*.md
+
+# Ignore test files
+*_test.go
+
+# Ignore scripts
+scripts/
