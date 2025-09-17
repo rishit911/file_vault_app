@@ -28,20 +28,22 @@ func main() {
 	log.Println("DB connected")
 
 	mux := http.NewServeMux()
+
+	// public
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
-
-	// Auth endpoints
 	mux.HandleFunc("/api/v1/auth/register", server.RegisterHandler(db.DB))
 	mux.HandleFunc("/api/v1/auth/login", server.LoginHandler(db.DB))
 
-	// File endpoints
-	mux.HandleFunc("/api/v1/files/register", server.RegisterFileHandler(db.DB))
-	mux.HandleFunc("/api/v1/files/upload", server.AuthMiddleware(server.UploadHandler(db.DB)))
-	mux.HandleFunc("/api/v1/files", server.AuthMiddleware(server.ListFilesHandler(db.DB)))
-	mux.HandleFunc("/api/v1/files/", server.AuthMiddleware(server.DeleteFileHandler(db.DB)))
+	// protected routes with AuthMiddleware
+	mux.Handle("/api/v1/files/upload", server.AuthMiddleware(server.UploadHandler(db.DB)))
+	mux.Handle("/api/v1/files/register", server.AuthMiddleware(server.RegisterFileHandler(db.DB)))
+	mux.Handle("/api/v1/files", server.AuthMiddleware(server.ListFilesHandler(db.DB))) // GET lists user files
+
+	// delete - pattern: /api/v1/files/{id}
+	mux.Handle("/api/v1/files/", server.AuthMiddleware(server.DeleteFileHandler(db.DB)))
 
 	// simple server with read/write timeouts
 	srv := &http.Server{
