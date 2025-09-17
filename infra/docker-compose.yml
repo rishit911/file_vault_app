@@ -23,6 +23,7 @@ services:
       - "8080:8080"
     volumes:
       - ../backend:/app
+      - file_storage:/data/files
     command: ["./server"]
 
   frontend:
@@ -37,3 +38,4 @@ services:
 
 volumes:
   db_data:
+  file_storage:
