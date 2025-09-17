@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rishit911/file_vault_proj-backend/internal/storage"
@@ -80,10 +81,12 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 			declared := fh.Header.Get("Content-Type")
 
 			if declared != "" && declared != detectedMime {
-				// Strict validation
-				f.Close()
-				http.Error(w, fmt.Sprintf("mime mismatch for %s: declared=%s detected=%s", fh.Filename, declared, detectedMime), http.StatusBadRequest)
-				return
+				// Allow charset variations for text types
+				if !strings.HasPrefix(declared, "text/") || !strings.HasPrefix(detectedMime, declared) {
+					f.Close()
+					http.Error(w, fmt.Sprintf("mime mismatch for %s: declared=%s detected=%s", fh.Filename, declared, detectedMime), http.StatusBadRequest)
+					return
+				}
 			}
 
 			// create tmp file and write head
