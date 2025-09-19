@@ -1,17 +1,21 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
+	"github.com/rishit911/file_vault_proj-backend/internal/auth"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
 	"github.com/rishit911/file_vault_proj-backend/graph"
+	"github.com/rishit911/file_vault_proj-backend/graph/generated"
 )
 
 func main() {
@@ -54,13 +58,21 @@ func main() {
 		playgroundHandler.ServeHTTP(w, r)
 	})
 
-	gqlSrv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{
+	gqlSrv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
 		Resolvers: &graph.Resolver{DB: db.DB},
 	}))
-	mux.Handle("/graphql", server.AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// let gql handler use context: delegate to gqlSrv
-		gqlSrv.ServeHTTP(w, r)
-	})))
+	mux.Handle("/graphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extract JWT token and set user context for GraphQL
+		ctx := r.Context()
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+			if userID, err := auth.ParseAndValidateJWT(token); err == nil {
+				ctx = context.WithValue(ctx, "userID", userID)
+			}
+		}
+		gqlSrv.ServeHTTP(w, r.WithContext(ctx))
+	}))
 
 	// CORS middleware wrapper
 	corsHandler := func(next http.Handler) http.Handler {

@@ -78,75 +78,96 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 		}
 	}
 
-	args := []interface{}{userID, limit, offset}
+	// First get total count (simpler query)
+	countArgs := []interface{}{userID}
+	countSql := `SELECT COUNT(1) FROM user_files uf JOIN file_objects fo ON uf.file_object_id=fo.id WHERE uf.user_id=$1` + buildFilterSQL(filter, &countArgs)
+	var total int
+	err := r.DB.Get(&total, countSql, countArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("count query failed: %v", err)
+	}
 
-	// base query
+	// If no files, return empty result
+	if total == 0 {
+		return &model.FilePage{Items: []*model.UserFile{}, TotalCount: 0}, nil
+	}
+
+	// Build main query with proper parameter indexing
+	args := []interface{}{userID}
 	sql := `SELECT
-		uf.id AS user_file_id,
+		uf.id,
 		uf.filename,
 		uf.uploaded_at,
-		fo.id AS file_object_id,
+		uf.visibility,
+		fo.id,
 		fo.hash,
 		fo.storage_path,
 		fo.size_bytes,
 		fo.mime_type,
-		fo.ref_count
+		fo.ref_count,
+		fo.created_at
 	FROM user_files uf
 	JOIN file_objects fo ON uf.file_object_id = fo.id
 	WHERE uf.user_id = $1`
 
-	// apply filters
+	// Apply filters
 	sql += buildFilterSQL(filter, &args)
-	sql += " ORDER BY uf.uploaded_at DESC LIMIT $2 OFFSET $3"
+	
+	// Add pagination
+	sql += fmt.Sprintf(" ORDER BY uf.uploaded_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, limit, offset)
 
 	rows, err := r.DB.Queryx(sql, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("main query failed: %v", err)
 	}
 	defer rows.Close()
 
 	var items []*model.UserFile
 	for rows.Next() {
-		var userFileID string
-		var filename string
-		var uploadedAt time.Time
-		var foID, foHash, foStorage string
-		var sizeBytes int
-		var mimeType *string
-		var refCount int
+		var uf struct {
+			ID         string     `db:"id"`
+			Filename   string     `db:"filename"`
+			UploadedAt time.Time  `db:"uploaded_at"`
+			Visibility string     `db:"visibility"`
+		}
+		var fo struct {
+			ID          string     `db:"id"`
+			Hash        string     `db:"hash"`
+			StoragePath string     `db:"storage_path"`
+			SizeBytes   int64      `db:"size_bytes"`
+			MimeType    *string    `db:"mime_type"`
+			RefCount    int        `db:"ref_count"`
+			CreatedAt   time.Time  `db:"created_at"`
+		}
 
-		err := rows.Scan(&userFileID, &filename, &uploadedAt, &foID, &foHash, &foStorage, &sizeBytes, &mimeType, &refCount)
+		err := rows.Scan(
+			&uf.ID, &uf.Filename, &uf.UploadedAt, &uf.Visibility,
+			&fo.ID, &fo.Hash, &fo.StoragePath, &fo.SizeBytes, &fo.MimeType, &fo.RefCount, &fo.CreatedAt,
+		)
 		if err != nil {
 			continue
 		}
 
-		user := &model.User{ID: userID}
-		fo := &model.FileObject{
-			ID:          foID,
-			Hash:        foHash,
-			StoragePath: foStorage,
-			SizeBytes:   sizeBytes,
-			MimeType:    mimeType,
-			RefCount:    refCount,
+		userFile := &model.UserFile{
+			ID:         uf.ID,
+			User:       &model.User{ID: userID},
+			FileObject: &model.FileObject{
+				ID:          fo.ID,
+				Hash:        fo.Hash,
+				StoragePath: fo.StoragePath,
+				SizeBytes:   int(fo.SizeBytes),
+				MimeType:    fo.MimeType,
+				RefCount:    fo.RefCount,
+				CreatedAt:   fo.CreatedAt,
+			},
+			Filename:   uf.Filename,
+			Visibility: uf.Visibility,
+			UploadedAt: uf.UploadedAt,
 		}
 
-		uf := &model.UserFile{
-			ID:         userFileID,
-			User:       user,
-			FileObject: fo,
-			Filename:   filename,
-			Visibility: "private",
-			UploadedAt: uploadedAt,
-		}
-
-		items = append(items, uf)
+		items = append(items, userFile)
 	}
-
-	// get total count
-	countArgs := []interface{}{userID}
-	countSql := `SELECT COUNT(1) FROM user_files uf JOIN file_objects fo ON uf.file_object_id=fo.id WHERE uf.user_id=$1` + buildFilterSQL(filter, &countArgs)
-	var total int
-	_ = r.DB.Get(&total, countSql, countArgs...)
 
 	return &model.FilePage{Items: items, TotalCount: total}, nil
 }
@@ -198,36 +219,76 @@ func (r *mutationResolver) RegisterFile(ctx context.Context, input model.Registe
 		_, err := r.DB.Exec("INSERT INTO file_objects (id, hash, storage_path, size_bytes, mime_type, ref_count) VALUES ($1,$2,$3,$4,$5,1)",
 			id, input.Hash, storagePath, input.SizeBytes, input.MimeType)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create file object: %v", err)
 		}
 		foID = id
-	} else if err != nil {
-		return nil, err
 	} else {
 		// increment ref
-		_, _ = r.DB.Exec("UPDATE file_objects SET ref_count = ref_count + 1 WHERE id=$1", foID)
+		_, err = r.DB.Exec("UPDATE file_objects SET ref_count = ref_count + 1 WHERE id=$1", foID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to increment ref count: %v", err)
+		}
 	}
 
 	// create user_file
 	userFileID := uuid.New().String()
-	_, err = r.DB.Exec("INSERT INTO user_files (id,user_id,file_object_id,filename) VALUES ($1,$2,$3,$4)",
+	_, err = r.DB.Exec("INSERT INTO user_files (id, user_id, file_object_id, filename) VALUES ($1,$2,$3,$4)",
 		userFileID, userID, foID, input.Filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create user file: %v", err)
 	}
 
 	// fetch created rows to return
-	var fo model.FileObject
-	_ = r.DB.Get(&fo, "SELECT id, hash, storage_path, size_bytes, mime_type, ref_count, created_at FROM file_objects WHERE id=$1", foID)
+	var fo struct {
+		ID          string    `db:"id"`
+		Hash        string    `db:"hash"`
+		StoragePath string    `db:"storage_path"`
+		SizeBytes   int64     `db:"size_bytes"`
+		MimeType    *string   `db:"mime_type"`
+		RefCount    int       `db:"ref_count"`
+		CreatedAt   time.Time `db:"created_at"`
+	}
+	err = r.DB.Get(&fo, "SELECT id, hash, storage_path, size_bytes, mime_type, ref_count, created_at FROM file_objects WHERE id=$1", foID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch file object: %v", err)
+	}
 
-	var uf model.UserFile
-	_ = r.DB.Get(&uf, "SELECT id, filename, uploaded_at FROM user_files WHERE id=$1", userFileID)
-	uf.ID = userFileID
-	uf.FileObject = &fo
-	uf.User = &model.User{ID: userID}
+	var uf struct {
+		ID         string    `db:"id"`
+		Filename   string    `db:"filename"`
+		UploadedAt time.Time `db:"uploaded_at"`
+		Visibility string    `db:"visibility"`
+	}
+	err = r.DB.Get(&uf, "SELECT id, filename, uploaded_at, visibility FROM user_files WHERE id=$1", userFileID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user file: %v", err)
+	}
 
 	return &model.RegisterFilePayload{
-		FileObject: &fo,
-		UserFile:   &uf,
+		FileObject: &model.FileObject{
+			ID:          fo.ID,
+			Hash:        fo.Hash,
+			StoragePath: fo.StoragePath,
+			SizeBytes:   int(fo.SizeBytes),
+			MimeType:    fo.MimeType,
+			RefCount:    fo.RefCount,
+			CreatedAt:   fo.CreatedAt,
+		},
+		UserFile: &model.UserFile{
+			ID:         uf.ID,
+			User:       &model.User{ID: userID},
+			FileObject: &model.FileObject{
+				ID:          fo.ID,
+				Hash:        fo.Hash,
+				StoragePath: fo.StoragePath,
+				SizeBytes:   int(fo.SizeBytes),
+				MimeType:    fo.MimeType,
+				RefCount:    fo.RefCount,
+				CreatedAt:   fo.CreatedAt,
+			},
+			Filename:   uf.Filename,
+			Visibility: uf.Visibility,
+			UploadedAt: uf.UploadedAt,
+		},
 	}, nil
 }

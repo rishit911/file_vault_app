@@ -80,17 +80,25 @@ func (m *mutationResolver) Login(ctx context.Context, email string, password str
 // Me
 func (q *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	// Extract user from context (AuthMiddleware sets user id on context)
-	// The AuthMiddleware uses key "userID" as string in server package. To access it,
-	// we can attempt to read from context.Value("userID") here.
 	if ctx == nil {
 		return nil, nil
 	}
 
 	if v := ctx.Value("userID"); v != nil {
 		if id, ok := v.(string); ok {
-			var u model.User
+			var u struct {
+				ID        string    `db:"id"`
+				Email     string    `db:"email"`
+				Role      string    `db:"role"`
+				CreatedAt time.Time `db:"created_at"`
+			}
 			if err := q.DB.Get(&u, "SELECT id, email, role, created_at FROM users WHERE id=$1", id); err == nil {
-				return &u, nil
+				return &model.User{
+					ID:        u.ID,
+					Email:     u.Email,
+					Role:      u.Role,
+					CreatedAt: u.CreatedAt,
+				}, nil
 			}
 		}
 	}
