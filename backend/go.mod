@@ -1,6 +1,6 @@
 module github.com/rishit911/file_vault_proj-backend
 
-go 1.24.0
+go 1.20
 
 require (
 	github.com/99designs/gqlgen v0.17.80
