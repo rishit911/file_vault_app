@@ -11,13 +11,22 @@ export default function FileUploader({ onUploaded }: { onUploaded: () => void })
 
     setProgress(0);
     try {
+      // Upload files via REST API (handles streaming, hashing, deduplication)
+      // The REST endpoint already creates database records, so no additional
+      // GraphQL registerFile call is needed for basic uploads
       const resp = await api.post("/api/v1/files/upload", form, {
         headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (ev) => {
           if (ev.total) setProgress(Math.round((ev.loaded * 100) / ev.total));
         },
       });
+      
       console.log("uploaded", resp.data);
+      // Response contains: filename, hash, size_bytes, mime_type, file_object_id, user_file_id
+      
+      // TODO: When GraphQL client is added, optionally call registerFile mutation here
+      // for additional metadata processing or custom business logic
+      
       setProgress(null);
       onUploaded();
     } catch (err) {
