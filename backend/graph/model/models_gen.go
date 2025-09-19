@@ -2,5 +2,86 @@
 
 package model
 
+import (
+	"time"
+)
+
+type AuthPayload struct {
+	Token string `json:"token"`
+	User  *User  `json:"user"`
+}
+
+type DeletePayload struct {
+	Success bool `json:"success"`
+}
+
+type FileFilter struct {
+	MimeTypes        []string   `json:"mimeTypes,omitempty"`
+	MinSize          *int       `json:"minSize,omitempty"`
+	MaxSize          *int       `json:"maxSize,omitempty"`
+	DateFrom         *time.Time `json:"dateFrom,omitempty"`
+	DateTo           *time.Time `json:"dateTo,omitempty"`
+	UploaderEmail    *string    `json:"uploaderEmail,omitempty"`
+	FilenameContains *string    `json:"filenameContains,omitempty"`
+}
+
+type FileObject struct {
+	ID          string    `json:"id"`
+	Hash        string    `json:"hash"`
+	StoragePath string    `json:"storagePath"`
+	SizeBytes   int       `json:"sizeBytes"`
+	MimeType    *string   `json:"mimeType,omitempty"`
+	RefCount    int       `json:"refCount"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+type FilePage struct {
+	Items      []*UserFile `json:"items"`
+	TotalCount int         `json:"totalCount"`
+}
+
+type Mutation struct {
+}
+
+type PaginationInput struct {
+	Limit  *int `json:"limit,omitempty"`
+	Offset *int `json:"offset,omitempty"`
+}
+
 type Query struct {
+}
+
+type RegisterFileInput struct {
+	Filename  string  `json:"filename"`
+	Hash      string  `json:"hash"`
+	SizeBytes int     `json:"sizeBytes"`
+	MimeType  *string `json:"mimeType,omitempty"`
+}
+
+type RegisterFilePayload struct {
+	FileObject *FileObject `json:"fileObject"`
+	UserFile   *UserFile   `json:"userFile"`
+}
+
+type StorageStats struct {
+	TotalDedupedBytes int     `json:"totalDedupedBytes"`
+	OriginalBytes     int     `json:"originalBytes"`
+	SavedBytes        int     `json:"savedBytes"`
+	SavedPercent      float64 `json:"savedPercent"`
+}
+
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type UserFile struct {
+	ID         string      `json:"id"`
+	User       *User       `json:"user"`
+	FileObject *FileObject `json:"fileObject"`
+	Filename   string      `json:"filename"`
+	Visibility string      `json:"visibility"`
+	UploadedAt time.Time   `json:"uploadedAt"`
 }
