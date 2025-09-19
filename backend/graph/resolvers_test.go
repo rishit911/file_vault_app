@@ -3,6 +3,7 @@ package graph_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/rishit911/file_vault_proj-backend/internal/auth"
 )
@@ -32,7 +33,7 @@ func TestJWTWorkflow(t *testing.T) {
 	userID := "test-user-123"
 
 	// Generate JWT
-	token, err := auth.GenerateJWT(userID, auth.DefaultTokenDuration)
+	token, err := auth.GenerateJWT(userID, time.Hour*24) // 24 hours
 	if err != nil {
 		t.Fatalf("Failed to generate JWT: %v", err)
 	}
