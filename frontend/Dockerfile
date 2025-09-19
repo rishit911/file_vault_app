@@ -16,7 +16,7 @@ FROM nginx:1.25-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # copy a minimal custom nginx config to enable SPA routing
-COPY infra/nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 3000
 
