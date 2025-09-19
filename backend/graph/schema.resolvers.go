@@ -115,10 +115,7 @@ func (r *queryResolver) File(ctx context.Context, userFileID string) (*model.Use
 	panic("not implemented: File - file")
 }
 
-// AdminFiles is the resolver for the adminFiles field.
-func (r *queryResolver) AdminFiles(ctx context.Context, pagination *model.PaginationInput) (*model.FilePage, error) {
-	panic("not implemented: AdminFiles - adminFiles")
-}
+
 
 // Stats is the resolver for the stats field.
 func (r *queryResolver) Stats(ctx context.Context) (*model.StorageStats, error) {
