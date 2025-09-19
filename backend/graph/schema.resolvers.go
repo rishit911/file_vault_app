@@ -97,11 +97,6 @@ func (q *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	return nil, nil
 }
 
-// RegisterFile is the resolver for the registerFile field.
-func (r *mutationResolver) RegisterFile(ctx context.Context, input model.RegisterFileInput) (*model.RegisterFilePayload, error) {
-	panic("not implemented: RegisterFile - registerFile")
-}
-
 // DeleteFile is the resolver for the deleteFile field.
 func (r *mutationResolver) DeleteFile(ctx context.Context, userFileID string) (*model.DeletePayload, error) {
 	panic("not implemented: DeleteFile - deleteFile")
@@ -110,15 +105,6 @@ func (r *mutationResolver) DeleteFile(ctx context.Context, userFileID string) (*
 // File is the resolver for the file field.
 func (r *queryResolver) File(ctx context.Context, userFileID string) (*model.UserFile, error) {
 	panic("not implemented: File - file")
-}
-
-// Files is the resolver for the files field.
-func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pagination *model.PaginationInput) (*model.FilePage, error) {
-	panic("not implemented: Files - files")
-}
-
-func (r *queryResolver) SearchFiles(ctx context.Context, q string, filter *model.FileFilter, pagination *model.PaginationInput) (*model.FilePage, error) {
-	panic("not implemented: SearchFiles - searchFiles")
 }
 
 // AdminFiles is the resolver for the adminFiles field.
