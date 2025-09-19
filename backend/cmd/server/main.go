@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
+	"golang.org/x/time/rate"
 	"github.com/rishit911/file_vault_proj-backend/internal/auth"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
@@ -33,6 +34,9 @@ func main() {
 		log.Fatalf("db connect failed: %v", err)
 	}
 	log.Println("DB connected")
+
+	// Initialize rate limiter store (2 requests per second, burst of 5)
+	rateLimiter := server.NewRateLimiterStore(rate.Limit(2), 5)
 
 	mux := http.NewServeMux()
 
@@ -61,7 +65,8 @@ func main() {
 	gqlSrv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
 		Resolvers: &graph.Resolver{DB: db.DB},
 	}))
-	mux.Handle("/graphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// GraphQL handler with rate limiting
+	graphqlHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract JWT token and set user context for GraphQL
 		ctx := r.Context()
 		authHeader := r.Header.Get("Authorization")
@@ -72,7 +77,10 @@ func main() {
 			}
 		}
 		gqlSrv.ServeHTTP(w, r.WithContext(ctx))
-	}))
+	})
+
+	// Apply rate limiting to GraphQL endpoint
+	mux.Handle("/graphql", server.RateLimitMiddleware(rateLimiter, graphqlHandler))
 
 	// CORS middleware wrapper
 	corsHandler := func(next http.Handler) http.Handler {

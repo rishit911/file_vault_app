@@ -121,6 +121,17 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 
 			hash := hex.EncodeToString(hasher.Sum(nil))
 
+			// Check storage quota before processing
+			ok, used, err := CheckStorageQuota(db, userID, totalSize)
+			if err != nil {
+				http.Error(w, "quota check failed: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !ok {
+				http.Error(w, fmt.Sprintf("storage quota exceeded: used %d bytes", used), http.StatusForbidden)
+				return
+			}
+
 			// dedup check
 			fo, err := storage.FindFileObjectByHash(db, hash)
 			if err != nil {
