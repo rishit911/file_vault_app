@@ -112,7 +112,7 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 
 	// Apply filters
 	sql += buildFilterSQL(filter, &args)
-	
+
 	// Add pagination
 	sql += fmt.Sprintf(" ORDER BY uf.uploaded_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
 	args = append(args, limit, offset)
@@ -126,19 +126,19 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 	var items []*model.UserFile
 	for rows.Next() {
 		var uf struct {
-			ID         string     `db:"id"`
-			Filename   string     `db:"filename"`
-			UploadedAt time.Time  `db:"uploaded_at"`
-			Visibility string     `db:"visibility"`
+			ID         string    `db:"id"`
+			Filename   string    `db:"filename"`
+			UploadedAt time.Time `db:"uploaded_at"`
+			Visibility string    `db:"visibility"`
 		}
 		var fo struct {
-			ID          string     `db:"id"`
-			Hash        string     `db:"hash"`
-			StoragePath string     `db:"storage_path"`
-			SizeBytes   int64      `db:"size_bytes"`
-			MimeType    *string    `db:"mime_type"`
-			RefCount    int        `db:"ref_count"`
-			CreatedAt   time.Time  `db:"created_at"`
+			ID          string    `db:"id"`
+			Hash        string    `db:"hash"`
+			StoragePath string    `db:"storage_path"`
+			SizeBytes   int64     `db:"size_bytes"`
+			MimeType    *string   `db:"mime_type"`
+			RefCount    int       `db:"ref_count"`
+			CreatedAt   time.Time `db:"created_at"`
 		}
 
 		err := rows.Scan(
@@ -150,8 +150,8 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 		}
 
 		userFile := &model.UserFile{
-			ID:         uf.ID,
-			User:       &model.User{ID: userID},
+			ID:   uf.ID,
+			User: &model.User{ID: userID},
 			FileObject: &model.FileObject{
 				ID:          fo.ID,
 				Hash:        fo.Hash,
@@ -177,7 +177,7 @@ func (r *queryResolver) SearchFiles(ctx context.Context, q string, filter *model
 	searchFilter := &model.FileFilter{
 		FilenameContains: &q,
 	}
-	
+
 	// merge with existing filter if provided
 	if filter != nil {
 		if filter.MimeTypes != nil {
@@ -275,8 +275,8 @@ func (r *mutationResolver) RegisterFile(ctx context.Context, input model.Registe
 			CreatedAt:   fo.CreatedAt,
 		},
 		UserFile: &model.UserFile{
-			ID:         uf.ID,
-			User:       &model.User{ID: userID},
+			ID:   uf.ID,
+			User: &model.User{ID: userID},
 			FileObject: &model.FileObject{
 				ID:          fo.ID,
 				Hash:        fo.Hash,

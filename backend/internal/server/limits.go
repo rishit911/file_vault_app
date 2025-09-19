@@ -38,7 +38,7 @@ func (s *RateLimiterStore) Get(userID string) *rate.Limiter {
 func RateLimitMiddleware(store *RateLimiterStore, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := GetUserIDFromContext(r)
-		
+
 		// Use IP address for unauthenticated requests, userID for authenticated ones
 		key := userID
 		if key == "" {

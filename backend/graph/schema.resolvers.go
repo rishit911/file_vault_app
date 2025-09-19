@@ -116,8 +116,6 @@ func (r *queryResolver) File(ctx context.Context, userFileID string) (*model.Use
 	panic("not implemented: File - file")
 }
 
-
-
 // Stats is the resolver for the stats field.
 func (r *queryResolver) Stats(ctx context.Context) (*model.StorageStats, error) {
 	// Ensure user is admin

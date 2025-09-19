@@ -11,12 +11,12 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
-	"golang.org/x/time/rate"
+	"github.com/rishit911/file_vault_proj-backend/graph"
+	"github.com/rishit911/file_vault_proj-backend/graph/generated"
 	"github.com/rishit911/file_vault_proj-backend/internal/auth"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
-	"github.com/rishit911/file_vault_proj-backend/graph"
-	"github.com/rishit911/file_vault_proj-backend/graph/generated"
+	"golang.org/x/time/rate"
 )
 
 func main() {
@@ -88,12 +88,12 @@ func main() {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			
+
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
-			
+
 			next.ServeHTTP(w, r)
 		})
 	}

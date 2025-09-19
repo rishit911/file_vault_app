@@ -3,8 +3,8 @@ package storage
 import (
 	"database/sql"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 type FileObject struct {

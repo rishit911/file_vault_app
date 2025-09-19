@@ -84,12 +84,12 @@ func (r *queryResolver) AdminFiles(ctx context.Context, pagination *model.Pagina
 		}
 
 		fo := &model.FileObject{
-			ID:          foID,
-			Hash:        foHash,
-			SizeBytes:   int(sizeBytes),
-			MimeType:    mimeType,
-			RefCount:    refCount,
-			CreatedAt:   foCreatedAt,
+			ID:        foID,
+			Hash:      foHash,
+			SizeBytes: int(sizeBytes),
+			MimeType:  mimeType,
+			RefCount:  refCount,
+			CreatedAt: foCreatedAt,
 		}
 
 		uf := &model.UserFile{
