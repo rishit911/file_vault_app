@@ -1,42 +1,34 @@
-version: '3.8'
+version: "3.9"
 
 services:
   postgres:
     image: postgres:15
+    container_name: fv-postgres
     environment:
       POSTGRES_USER: filevault_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filevault_pass}
+      POSTGRES_PASSWORD: filevault_pass
       POSTGRES_DB: filevault_db
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U filevault_user -d filevault_db"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  adminer:
-    image: adminer:latest
-    restart: "no"
-    ports:
-      - "8081:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
+    container_name: fv-backend
     env_file:
-      - ../backend/.env.dev   # local dev env (not committed)
+      - ../backend/.env.dev
     environment:
       - PORT=8080
       - STORAGE_PATH=/data/files
     volumes:
-      - ../backend:/app:ro   # bind mount for code (readonly) during dev; remove for prod
       - file_storage:/data/files
     ports:
       - "8080:8080"
@@ -49,12 +41,11 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+    container_name: fv-frontend
     ports:
       - "3000:3000"
     environment:
       - VITE_API_BASE_URL=http://localhost:8080
-    volumes:
-      - ../frontend:/app:ro
     depends_on:
       - backend
     restart: unless-stopped

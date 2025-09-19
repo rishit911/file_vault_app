@@ -37,3 +37,50 @@ cp backend/.env.example backend/.env.dev
 ```bash
 ./infra/down.sh
 ```
+
+## Running with Docker Compose
+
+1. Copy env file:
+```bash
+cp backend/.env.example backend/.env.dev
+# Edit backend/.env.dev if needed
+```
+
+2. Start services:
+```bash
+cd infra
+docker compose up -d --build
+```
+
+3. Verify:
+- Backend health: `curl http://localhost:8080/health` → OK
+- Frontend: http://localhost:3000
+- Postgres: exposed on localhost:5433 (connect with psql or Adminer)
+
+4. Stop services:
+```bash
+cd infra
+docker compose down -v
+```
+
+5. Commit changes (do NOT commit .env.dev):
+```bash
+git add infra/docker-compose.yml README.md
+git commit -m "chore(docker): configure docker-compose to run postgres, backend, frontend together"
+```
+
+6. Push to origin main:
+```bash
+git push origin main
+```
+
+7. Print verification commands for me to run locally:
+```bash
+# from repo root
+cp backend/.env.example backend/.env.dev
+cd infra
+docker compose up -d --build
+docker compose ps
+docker compose logs -f backend
+curl -v http://localhost:8080/health
+```
