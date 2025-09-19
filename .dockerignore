@@ -1,0 +1,15 @@
+node_modules
+dist
+build
+.vscode
+.idea
+.DS_Store
+**/.env
+**/.env.local
+**/*.log
+**/tmp
+**/coverage
+backend/bin
+frontend/node_modules
+frontend/dist
+*.tar.gz
