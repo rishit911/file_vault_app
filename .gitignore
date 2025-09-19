@@ -9,7 +9,6 @@ dist/
 /bin/
 /pkg/
 /vendor/
-**/go.sum
 
 # IDE
 .vscode/
