@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/vektah/gqlparser/v2 v2.5.30
 	golang.org/x/crypto v0.42.0
+	golang.org/x/time v0.13.0
 )
 
 require (
@@ -18,7 +19,5 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
-	golang.org/x/time v0.13.0 // indirect
 )
