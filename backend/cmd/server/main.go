@@ -6,9 +6,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/joho/godotenv"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
+	"github.com/rishit911/file_vault_proj-backend/graph"
 )
 
 func main() {
@@ -44,6 +47,20 @@ func main() {
 
 	// delete - pattern: /api/v1/files/{id}
 	mux.Handle("/api/v1/files/", server.AuthMiddleware(server.DeleteFileHandler(db.DB)))
+
+	// GraphQL playground & endpoint
+	playgroundHandler := playground.Handler("GraphQL", "/graphql")
+	mux.HandleFunc("/playground", func(w http.ResponseWriter, r *http.Request) {
+		playgroundHandler.ServeHTTP(w, r)
+	})
+
+	gqlSrv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{
+		Resolvers: &graph.Resolver{DB: db.DB},
+	}))
+	mux.Handle("/graphql", server.AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// let gql handler use context: delegate to gqlSrv
+		gqlSrv.ServeHTTP(w, r)
+	})))
 
 	// CORS middleware wrapper
 	corsHandler := func(next http.Handler) http.Handler {
