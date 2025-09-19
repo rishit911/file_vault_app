@@ -1,44 +1,63 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-filevault_user}
+      POSTGRES_USER: filevault_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filevault_pass}
-      POSTGRES_DB: ${POSTGRES_DB:-filevault_db}
+      POSTGRES_DB: filevault_db
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U filevault_user -d filevault_db"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
       timeout: 5s
       retries: 5
+
+  adminer:
+    image: adminer:latest
+    restart: "no"
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   backend:
     build:
       context: ../backend
+      dockerfile: Dockerfile
+    env_file:
+      - ../backend/.env.dev   # local dev env (not committed)
+    environment:
+      - PORT=8080
+      - STORAGE_PATH=/data/files
+    volumes:
+      - ../backend:/app:ro   # bind mount for code (readonly) during dev; remove for prod
+      - file_storage:/data/files
+    ports:
+      - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
-    env_file:
-      - ../backend/.env.docker
-    ports:
-      - "8080:8080"
-    volumes:
-      - ../backend:/app
-      - file_storage:/data/files
-    command: ["./server"]
+    restart: unless-stopped
 
   frontend:
     build:
       context: ../frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      - ../frontend:/app
     environment:
       - VITE_API_BASE_URL=http://localhost:8080
+    volumes:
+      - ../frontend:/app:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   db_data:
