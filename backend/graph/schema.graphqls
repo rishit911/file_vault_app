@@ -1,1 +1,100 @@
-# GraphQL schema placeholder - will be populated in next steps
+# GraphQL schema for file_vault_proj
+
+scalar Time
+scalar UUID
+
+type Query {
+	me: User
+	file(userFileID: UUID!): UserFile
+	files(filter: FileFilter, pagination: PaginationInput): FilePage!
+	searchFiles(q: String!, filter: FileFilter, pagination: PaginationInput): FilePage!
+	adminFiles(pagination: PaginationInput): FilePage!    # admin-only
+	stats: StorageStats!
+}
+
+type Mutation {
+	register(email: String!, password: String!): AuthPayload!
+	login(email: String!, password: String!): AuthPayload!
+	# upload registration (metadata-only) - file content via REST or GraphQL upload
+	registerFile(input: RegisterFileInput!): RegisterFilePayload!
+	deleteFile(userFileID: UUID!): DeletePayload!
+	# optional: GraphQL multipart upload, see Upload scalar
+	# uploadFile(file: Upload!): RegisterFilePayload!
+}
+
+type AuthPayload {
+	token: String!
+	user: User!
+}
+
+type User {
+	id: UUID!
+	email: String!
+	role: String!
+	createdAt: Time!
+}
+
+type FileObject {
+	id: UUID!
+	hash: String!
+	storagePath: String!
+	sizeBytes: Int!
+	mimeType: String
+	refCount: Int!
+	createdAt: Time!
+}
+
+type UserFile {
+	id: UUID!
+	user: User!
+	fileObject: FileObject!
+	filename: String!
+	visibility: String!
+	uploadedAt: Time!
+}
+
+input RegisterFileInput {
+	filename: String!
+	hash: String!
+	sizeBytes: Int!
+	mimeType: String
+}
+
+type RegisterFilePayload {
+	fileObject: FileObject!
+	userFile: UserFile!
+}
+
+type DeletePayload {
+	success: Boolean!
+}
+
+input FileFilter {
+	mimeTypes: [String!]
+	minSize: Int
+	maxSize: Int
+	dateFrom: Time
+	dateTo: Time
+	uploaderEmail: String
+	filenameContains: String
+}
+
+input PaginationInput {
+	limit: Int = 20
+	offset: Int = 0
+}
+
+type FilePage {
+	items: [UserFile!]!
+	totalCount: Int!
+}
+
+type StorageStats {
+	totalDedupedBytes: Int!
+	originalBytes: Int!
+	savedBytes: Int!
+	savedPercent: Float!
+}
+
+# optional Upload scalar if you want direct GraphQL uploads
+# scalar Upload
