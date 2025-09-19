@@ -153,7 +153,15 @@ Delete a user's file with safe reference counting.
 FileVault provides a comprehensive GraphQL API for advanced file management operations.
 
 **Endpoint**: `POST /graphql`  
-**Playground**: `GET /playground`
+**Playground**: `GET /playground` (Interactive GraphQL IDE for testing queries)
+
+### Upload Flow Integration
+
+The recommended approach combines REST for file uploads with GraphQL for metadata operations:
+
+1. **REST Upload**: `POST /api/v1/files/upload` - Handles multipart streaming, hashing, and deduplication
+2. **GraphQL Queries**: Use GraphQL for listing, searching, and managing file metadata
+3. **GraphQL Mutations**: Use for user management and optional metadata registration
 
 ### Authentication
 

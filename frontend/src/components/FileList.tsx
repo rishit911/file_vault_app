@@ -17,10 +17,16 @@ export default function FileList() {
   const fetchList = async () => {
     try {
       const resp = await api.get("/api/v1/files");
-      setItems(resp.data);
-    } catch (err) {
-      console.error(err);
-      alert("Could not fetch files");
+      setItems(resp.data || []);
+    } catch (err: any) {
+      console.error("FileList fetch error:", err);
+      if (err.response?.status === 401) {
+        alert("Please log in to view your files");
+      } else if (err.response?.status === 0 || err.code === 'NETWORK_ERROR') {
+        alert("Cannot connect to server. Please check if the backend is running on http://localhost:8080");
+      } else {
+        alert(`Could not fetch files: ${err.response?.data || err.message}`);
+      }
     }
   };
 

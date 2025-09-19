@@ -3,6 +3,7 @@ import api from "../api";
 
 export default function AdminPage() {
   const [items, setItems] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,13 @@ export default function AdminPage() {
             createdAt
           } 
         } 
-      } 
+      }
+      stats {
+        totalDedupedBytes
+        originalBytes
+        savedBytes
+        savedPercent
+      }
     }`;
 
     try {
@@ -41,6 +48,7 @@ export default function AdminPage() {
       }
       
       setItems(resp.data.data.adminFiles.items);
+      setStats(resp.data.data.stats);
       setError(null);
     } catch (err: any) {
       console.error(err);
@@ -80,9 +88,66 @@ export default function AdminPage() {
     );
   }
 
+  const getUniqueUsers = () => {
+    const users = new Set(items.map(item => item.user.email));
+    return users.size;
+  };
+
+  const getTotalStorageUsed = () => {
+    const uniqueFiles = new Map();
+    items.forEach(item => {
+      uniqueFiles.set(item.fileObject.id, item.fileObject.sizeBytes);
+    });
+    return Array.from(uniqueFiles.values()).reduce((sum, size) => sum + size, 0);
+  };
+
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Admin Dashboard — All Files ({items.length} files)</h2>
+      <h2>Admin Dashboard — System Overview</h2>
+      
+      {/* System Health Stats */}
+      {stats && (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '15px', 
+          marginBottom: '30px',
+          padding: '20px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#495057' }}>Total Files</h3>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#007bff' }}>
+              {items.length}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#495057' }}>Active Users</h3>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>
+              {getUniqueUsers()}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#495057' }}>Storage Used</h3>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#6f42c1' }}>
+              {formatBytes(stats.totalDedupedBytes)}
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 5px 0', color: '#495057' }}>Storage Saved</h3>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fd7e14' }}>
+              {formatBytes(stats.savedBytes)}
+            </div>
+            <div style={{ fontSize: '12px', color: '#6c757d' }}>
+              ({stats.savedPercent.toFixed(1)}% saved)
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h3>All Files ({items.length} files)</h3>
       
       <div style={{ marginBottom: '20px' }}>
         <button onClick={fetchAdmin} style={{ padding: '8px 16px' }}>

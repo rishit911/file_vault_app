@@ -4,6 +4,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -119,5 +120,46 @@ func (r *queryResolver) File(ctx context.Context, userFileID string) (*model.Use
 
 // Stats is the resolver for the stats field.
 func (r *queryResolver) Stats(ctx context.Context) (*model.StorageStats, error) {
-	panic("not implemented: Stats - stats")
+	// Ensure user is admin
+	userID, _ := ctx.Value("userID").(string)
+	if userID == "" {
+		return nil, fmt.Errorf("unauthenticated")
+	}
+
+	var role string
+	err := r.DB.Get(&role, "SELECT role FROM users WHERE id=$1", userID)
+	if err != nil || role != "admin" {
+		return nil, fmt.Errorf("forbidden")
+	}
+
+	// Calculate storage statistics
+	var totalDedupedBytes int64
+	var originalBytes int64
+
+	// Get total unique file storage (deduplicated)
+	err = r.DB.Get(&totalDedupedBytes, "SELECT COALESCE(SUM(size_bytes), 0) FROM file_objects")
+	if err != nil {
+		return nil, err
+	}
+
+	// Get total original file sizes (if no deduplication)
+	err = r.DB.Get(&originalBytes, `
+		SELECT COALESCE(SUM(fo.size_bytes * fo.ref_count), 0) 
+		FROM file_objects fo`)
+	if err != nil {
+		return nil, err
+	}
+
+	savedBytes := originalBytes - totalDedupedBytes
+	savedPercent := float64(0)
+	if originalBytes > 0 {
+		savedPercent = (float64(savedBytes) / float64(originalBytes)) * 100
+	}
+
+	return &model.StorageStats{
+		TotalDedupedBytes: int(totalDedupedBytes),
+		OriginalBytes:     int(originalBytes),
+		SavedBytes:        int(savedBytes),
+		SavedPercent:      savedPercent,
+	}, nil
 }

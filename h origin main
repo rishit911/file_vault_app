@@ -1,0 +1,10 @@
+[33m53ba1fb[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m test/docs: add upload-list-delete smoke test and document new endpoints
+[33m78f50ae[m fix(backend): add CORS middleware to enable frontend communication
+[33m4c65751[m feat(frontend): add file uploader, file list and simple login flow
+[33m2cb6164[m fix(docker): update Dockerfile and add .dockerignore for better build process
+[33m5acf850[m chore(infra): add persistent volume file_storage for uploaded files
+[33m42cb35c[m chore(server): wire upload/list/delete endpoints with AuthMiddleware
+[33m5bdf188[m feat(server): wire up delete endpoint with JWT auth
+[33m61333b5[m feat(storage): add delete endpoint with ref-count safe removal and blob cleanup
+[33m596df0f[m feat(server): wire up list files endpoint with JWT auth
+[33m7d50ce7[m feat(storage): add list files endpoint (per-user) with dedup stats
