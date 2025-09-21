@@ -1,0 +1,309 @@
+📘 File Vault Project Documentation
+1. Overview
+
+file_vault_proj is a secure file vault application designed to handle:
+
+File storage with deduplication (via SHA-256 hashing).
+
+User authentication (bcrypt + JWT).
+
+File metadata management (per-user files, references, sharing).
+
+PostgreSQL database backend with migrations.
+
+RESTful API built in Go (Golang).
+
+Modern frontend with React + TypeScript.
+
+Containerized using Docker Compose for local development.
+
+2. Tech Stack
+
+Backend: Go (net/http, sqlx, bcrypt, JWT)
+
+Database: PostgreSQL (with golang-migrate for migrations)
+
+Frontend: React + TypeScript (Vite)
+
+Containerization: Docker Compose
+
+Testing: Smoke test scripts (Bash & PowerShell), Postman collection
+
+3. Project Structure
+file_vault_proj/
+├── backend/
+│   ├── cmd/server/main.go          # HTTP server entry point
+│   ├── internal/
+│   │   ├── auth/auth.go            # JWT & bcrypt utilities
+│   │   ├── db/db.go                # Database connection
+│   │   ├── server/handlers.go      # Auth endpoints
+│   │   ├── server/file_handlers.go # File endpoints
+│   │   └── storage/storage.go      # File object management
+│   ├── migrations/                 # SQL migrations
+│   ├── scripts/                    # Smoke test scripts & Postman collection
+│   └── .env                        # Local environment (ignored in git)
+├── frontend/                       # React + Vite frontend
+├── infra/docker-compose.yml        # Docker setup
+└── docs/
+    ├── design.md                   # Architecture design notes
+    └── documentation.md            # Main documentation (this file)
+
+4. Setup Instructions
+4.1 Clone the Repo
+git clone https://github.com/rishit911/file_vault_app.git file_vault_proj
+cd file_vault_proj
+
+4.2 Environment Variables
+
+Create a local .env file in backend/:
+
+DATABASE_URL=postgres://filevault_user:Pguk2814%409R@localhost:5433/filevault_db?sslmode=disable
+JWT_SECRET=supersecretdevkey_local
+PORT=8080
+STORAGE_PATH=/data/files
+
+
+⚠️ Replace %409R with URL encoding of @ in your password.
+
+Do not commit .env. Only .env.example is in git.
+
+4.3 Run PostgreSQL (via Docker)
+cd infra
+docker compose up -d postgres
+
+
+Check connection:
+
+psql -h localhost -p 5433 -U filevault_user filevault_db
+
+4.4 Run Migrations
+
+Install migrate CLI and run:
+
+migrate -path backend/migrations -database "postgres://filevault_user:Pguk2814%409R@localhost:5433/filevault_db?sslmode=disable" up
+
+4.5 Start Backend
+cd backend
+go run ./cmd/server
+
+
+Test health check:
+
+curl http://localhost:8080/health
+# Expected: "OK"
+
+4.6 Start Frontend
+cd frontend
+npm install
+npm run dev
+
+
+Open: http://localhost:3000
+
+5. Database Schema
+Tables
+
+users
+
+id UUID PK
+
+email TEXT UNIQUE
+
+password_hash TEXT
+
+role TEXT (default=user)
+
+created_at TIMESTAMP
+
+file_objects
+
+id UUID PK
+
+hash TEXT UNIQUE
+
+storage_path TEXT
+
+size_bytes BIGINT
+
+mime_type TEXT
+
+ref_count INT
+
+created_at TIMESTAMP
+
+user_files
+
+id UUID PK
+
+user_id FK → users.id
+
+file_object_id FK → file_objects.id
+
+filename TEXT
+
+visibility TEXT (private/public)
+
+uploaded_at TIMESTAMP
+
+shares
+
+id UUID PK
+
+user_file_id FK → user_files.id
+
+public_link TEXT
+
+expires_at TIMESTAMP
+
+download_count BIGINT
+
+created_at TIMESTAMP
+
+downloads
+
+id UUID PK
+
+user_file_id FK → user_files.id
+
+downloader_ip TEXT
+
+downloaded_at TIMESTAMP
+
+6. API Endpoints
+6.1 Health
+
+GET /health
+✅ Returns "OK" if backend is running.
+
+6.2 Authentication
+Register
+
+POST /api/v1/auth/register
+Request:
+
+{
+  "email": "user@example.com",
+  "password": "Secret123!"
+}
+
+
+Response:
+
+{
+  "id": "uuid-of-user"
+}
+
+Login
+
+POST /api/v1/auth/login
+Request:
+
+{
+  "email": "user@example.com",
+  "password": "Secret123!"
+}
+
+
+Response:
+
+{
+  "token": "<jwt-token>"
+}
+
+6.3 Files
+Register Metadata (Deduplication Skeleton)
+
+POST /api/v1/files/register
+Headers:
+X-User-Id: <uuid> (temporary, until JWT middleware added)
+
+Request:
+
+{
+  "filename": "sample.pdf",
+  "hash": "sha256-hash",
+  "size_bytes": 1024,
+  "mime_type": "application/pdf"
+}
+
+
+Response:
+
+{
+  "file_object_id": "uuid",
+  "user_file_id": "uuid"
+}
+
+7. Testing
+7.1 Smoke Test Script
+
+Run:
+
+backend/scripts/smoke_test.sh
+
+
+Expected flow:
+
+Register → ✅ New user created
+
+Login → ✅ JWT issued
+
+File register → ✅ Deduplication logic works
+
+7.2 Postman Collection
+
+Import backend/scripts/postman_collection.json into Postman.
+Contains:
+
+Health Check
+
+Auth (Register/Login)
+
+File Register
+
+8. Current Progress (End of Day 2)
+
+✅ Day 1:
+
+Project skeleton (backend, frontend, infra, docs).
+
+Go backend with /health.
+
+React frontend placeholder.
+
+Docker Compose + Dockerfiles.
+
+Documentation scaffold.
+
+✅ Day 2:
+
+PostgreSQL schema + migrations.
+
+DB connection with sqlx.
+
+Auth system (register/login).
+
+JWT + bcrypt security.
+
+File metadata deduplication skeleton.
+
+Smoke test scripts + Postman collection.
+
+No secrets in repo.
+
+
+
+
+9. Next Steps (Day 3)
+
+Implement multipart file upload (single + multi-file).
+
+Validate MIME type vs extension.
+
+Stream SHA-256 hashing during upload.
+
+List files per user with metadata.
+
+Implement file delete with reference counting.
+
+Frontend: Drag-and-drop upload + progress bars.

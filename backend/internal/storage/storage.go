@@ -8,13 +8,14 @@ import (
 )
 
 type FileObject struct {
-	ID          string `db:"id"`
-	Hash        string `db:"hash"`
-	StoragePath string `db:"storage_path"`
-	SizeBytes   int64  `db:"size_bytes"`
-	MimeType    string `db:"mime_type"`
-	RefCount    int    `db:"ref_count"`
-	CreatedAt   string `db:"created_at"`
+	ID            string `db:"id"`
+	Hash          string `db:"hash"`
+	StoragePath   string `db:"storage_path"`
+	SizeBytes     int64  `db:"size_bytes"`
+	MimeType      string `db:"mime_type"`
+	RefCount      int    `db:"ref_count"`
+	DownloadCount int64  `db:"download_count"`
+	CreatedAt     string `db:"created_at"`
 }
 
 func FindFileObjectByHash(db *sqlx.DB, hash string) (*FileObject, error) {
@@ -31,19 +32,20 @@ func FindFileObjectByHash(db *sqlx.DB, hash string) (*FileObject, error) {
 
 func CreateFileObject(db *sqlx.DB, hash, storagePath string, size int64, mime string) (*FileObject, error) {
 	id := uuid.New().String()
-	_, err := db.Exec(`INSERT INTO file_objects (id, hash, storage_path, size_bytes, mime_type, ref_count) VALUES ($1,$2,$3,$4,$5,$6)`,
-		id, hash, storagePath, size, mime, 1)
+	_, err := db.Exec(`INSERT INTO file_objects (id, hash, storage_path, size_bytes, mime_type, ref_count, download_count) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+		id, hash, storagePath, size, mime, 1, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FileObject{
-		ID:          id,
-		Hash:        hash,
-		StoragePath: storagePath,
-		SizeBytes:   size,
-		MimeType:    mime,
-		RefCount:    1,
+		ID:            id,
+		Hash:          hash,
+		StoragePath:   storagePath,
+		SizeBytes:     size,
+		MimeType:      mime,
+		RefCount:      1,
+		DownloadCount: 0,
 	}, nil
 }
 

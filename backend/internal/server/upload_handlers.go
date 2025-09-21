@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	dbpkg "github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/storage"
 )
 
@@ -51,6 +52,24 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 		userID := GetUserIDFromContext(r)
 		if userID == "" {
 			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+
+		// Calculate total upload size for quota check
+		var totalUploadSize int64
+		for _, fh := range files {
+			totalUploadSize += fh.Size
+		}
+
+		// Check quota before processing any files
+		ctx := r.Context()
+		ok, _, err := dbpkg.CheckStorageQuota(ctx, db.DB, userID, totalUploadSize)
+		if err != nil {
+			http.Error(w, "quota check failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, "storage quota exceeded", http.StatusRequestEntityTooLarge)
 			return
 		}
 
@@ -148,6 +167,8 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 				}
 
 				finalPath := filepath.Join(subdir, hash)
+				// Store relative path from storage root for database
+				relativePath := filepath.Join(hash[:2], hash)
 
 				// move temp -> final
 				if err := os.Rename(tmpFile.Name(), finalPath); err != nil {
@@ -159,7 +180,7 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 					os.Remove(tmpFile.Name())
 				}
 
-				fo, err = storage.CreateFileObject(db, hash, finalPath, totalSize, detectedMime)
+				fo, err = storage.CreateFileObject(db, hash, relativePath, totalSize, detectedMime)
 				if err != nil {
 					http.Error(w, "create file object: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -178,6 +199,12 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 			if err != nil {
 				http.Error(w, "create user_file failed: "+err.Error(), http.StatusInternalServerError)
 				return
+			}
+
+			// Update user's storage usage
+			if err := dbpkg.UpdateUserStorageUsedDelta(ctx, db.DB, userID, totalSize); err != nil {
+				// Log error but don't fail the upload since file is already stored
+				fmt.Printf("warning: failed to update user storage usage: %v\n", err)
 			}
 
 			results = append(results, map[string]interface{}{

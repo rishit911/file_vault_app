@@ -10,7 +10,8 @@ import (
 
 type ctxKey string
 
-const userIDKey ctxKey = "userID"
+const UserIDKey ctxKey = "userID"
+const userIDKey = UserIDKey // Keep internal alias for backward compatibility
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

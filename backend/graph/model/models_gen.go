@@ -6,23 +6,48 @@ import (
 	"time"
 )
 
+type AdminStats struct {
+	TotalUsers               int `json:"totalUsers"`
+	TotalFileObjects         int `json:"totalFileObjects"`
+	TotalUserFiles           int `json:"totalUserFiles"`
+	DeduplicatedStorageBytes int `json:"deduplicatedStorageBytes"`
+	LogicalStorageBytes      int `json:"logicalStorageBytes"`
+	DedupSavingsBytes        int `json:"dedupSavingsBytes"`
+}
+
 type AuthPayload struct {
 	Token string `json:"token"`
 	User  *User  `json:"user"`
+}
+
+type CreateFolderInput struct {
+	Name     string  `json:"name"`
+	ParentID *string `json:"parentId,omitempty"`
 }
 
 type DeletePayload struct {
 	Success bool `json:"success"`
 }
 
+type DownloadRecord struct {
+	ID           string    `json:"id"`
+	ShareID      *string   `json:"shareId,omitempty"`
+	FileID       string    `json:"fileId"`
+	DownloaderID *string   `json:"downloaderId,omitempty"`
+	IP           *string   `json:"ip,omitempty"`
+	UserAgent    *string   `json:"userAgent,omitempty"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
 type FileFilter struct {
+	FilenameContains *string    `json:"filenameContains,omitempty"`
 	MimeTypes        []string   `json:"mimeTypes,omitempty"`
 	MinSize          *int       `json:"minSize,omitempty"`
 	MaxSize          *int       `json:"maxSize,omitempty"`
 	DateFrom         *time.Time `json:"dateFrom,omitempty"`
 	DateTo           *time.Time `json:"dateTo,omitempty"`
+	Tags             []string   `json:"tags,omitempty"`
 	UploaderEmail    *string    `json:"uploaderEmail,omitempty"`
-	FilenameContains *string    `json:"filenameContains,omitempty"`
 }
 
 type FileObject struct {
@@ -38,6 +63,16 @@ type FileObject struct {
 type FilePage struct {
 	Items      []*UserFile `json:"items"`
 	TotalCount int         `json:"totalCount"`
+}
+
+type Folder struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	OwnerID    string      `json:"ownerId"`
+	ParentID   *string     `json:"parentId,omitempty"`
+	CreatedAt  time.Time   `json:"createdAt"`
+	Files      []*UserFile `json:"files"`
+	Subfolders []*Folder   `json:"subfolders"`
 }
 
 type Mutation struct {
@@ -63,11 +98,42 @@ type RegisterFilePayload struct {
 	UserFile   *UserFile   `json:"userFile"`
 }
 
+type Share struct {
+	ID           string     `json:"id"`
+	FileID       *string    `json:"fileId,omitempty"`
+	FolderID     *string    `json:"folderId,omitempty"`
+	OwnerID      string     `json:"ownerId"`
+	Token        string     `json:"token"`
+	Public       bool       `json:"public"`
+	ExpiresAt    *time.Time `json:"expiresAt,omitempty"`
+	MaxDownloads *int       `json:"maxDownloads,omitempty"`
+	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+type ShareCreateInput struct {
+	FileID       *string    `json:"fileId,omitempty"`
+	FolderID     *string    `json:"folderId,omitempty"`
+	Public       *bool      `json:"public,omitempty"`
+	ExpiresAt    *time.Time `json:"expiresAt,omitempty"`
+	MaxDownloads *int       `json:"maxDownloads,omitempty"`
+}
+
+type ShareCreatePayload struct {
+	Token     string     `json:"token"`
+	URL       string     `json:"url"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+}
+
 type StorageStats struct {
 	TotalDedupedBytes int     `json:"totalDedupedBytes"`
 	OriginalBytes     int     `json:"originalBytes"`
 	SavedBytes        int     `json:"savedBytes"`
 	SavedPercent      float64 `json:"savedPercent"`
+}
+
+type Tag struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type User struct {
@@ -84,4 +150,5 @@ type UserFile struct {
 	Filename   string      `json:"filename"`
 	Visibility string      `json:"visibility"`
 	UploadedAt time.Time   `json:"uploadedAt"`
+	Tags       []*Tag      `json:"tags"`
 }

@@ -47,6 +47,9 @@ func main() {
 	})
 	mux.HandleFunc("/api/v1/auth/register", server.RegisterHandler(db.DB))
 	mux.HandleFunc("/api/v1/auth/login", server.LoginHandler(db.DB))
+	
+	// protected auth routes
+	mux.Handle("/api/v1/auth/me", server.AuthMiddleware(server.MeHandler(db.DB)))
 
 	// protected routes with AuthMiddleware
 	mux.Handle("/api/v1/files/upload", server.AuthMiddleware(server.UploadHandler(db.DB)))
@@ -55,6 +58,16 @@ func main() {
 
 	// delete - pattern: /api/v1/files/{id}
 	mux.Handle("/api/v1/files/", server.AuthMiddleware(server.DeleteFileHandler(db.DB)))
+
+	// Share routes
+	baseURL := getEnv("BASE_URL", "http://localhost:8080")
+	fileBasePath := getEnv("STORAGE_PATH", "/data/files")
+
+	// POST create share (authenticated)
+	mux.Handle("/api/v1/shares", server.AuthMiddleware(server.CreateShareHandler(db.DB, baseURL)))
+
+	// Public share endpoint (no auth required)
+	mux.HandleFunc("/s/", server.ServeShareHandler(db.DB, fileBasePath))
 
 	// GraphQL playground & endpoint
 	playgroundHandler := playground.Handler("GraphQL", "/graphql")
@@ -73,8 +86,14 @@ func main() {
 		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
 			token := strings.TrimPrefix(authHeader, "Bearer ")
 			if userID, err := auth.ParseAndValidateJWT(token); err == nil {
-				ctx = context.WithValue(ctx, "userID", userID)
+				// Use the same typed key as middleware
+				ctx = context.WithValue(ctx, server.UserIDKey, userID)
+				log.Printf("GraphQL: Set user context: %s", userID)
+			} else {
+				log.Printf("GraphQL: JWT validation failed: %v", err)
 			}
+		} else {
+			log.Printf("GraphQL: No auth header or invalid format")
 		}
 		gqlSrv.ServeHTTP(w, r.WithContext(ctx))
 	})

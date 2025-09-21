@@ -53,9 +53,11 @@ func TestContextValues(t *testing.T) {
 	ctx := context.Background()
 	userID := "test-user-456"
 
-	// Test context with user ID
-	ctx = context.WithValue(ctx, "userID", userID)
-	retrievedUserID, ok := ctx.Value("userID").(string)
+	// Test context with user ID using proper typed key
+	type ctxKey string
+	const userIDKey ctxKey = "userID"
+	ctx = context.WithValue(ctx, userIDKey, userID)
+	retrievedUserID, ok := ctx.Value(userIDKey).(string)
 	if !ok {
 		t.Fatal("Failed to retrieve userID from context")
 	}

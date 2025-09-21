@@ -4,96 +4,186 @@ scalar Time
 scalar UUID
 
 type Query {
-	me: User
-	file(userFileID: UUID!): UserFile
-	files(filter: FileFilter, pagination: PaginationInput): FilePage!
-	searchFiles(q: String!, filter: FileFilter, pagination: PaginationInput): FilePage!
-	adminFiles(pagination: PaginationInput): FilePage!    # admin-only
-	stats: StorageStats!
+  me: User
+  file(userFileID: UUID!): UserFile
+  files(filter: FileFilter, pagination: PaginationInput): FilePage!
+  searchFiles(
+    q: String!
+    filter: FileFilter
+    pagination: PaginationInput
+  ): FilePage!
+  adminFiles(pagination: PaginationInput): FilePage! # admin-only
+  adminStats: AdminStats! # admin-only
+  adminDownloads(from: Time, to: Time, limit: Int, offset: Int): [DownloadRecord!]! # admin-only
+  stats: StorageStats!
+  shareByToken(token: String!): Share
+  listShares(limit: Int, offset: Int): [Share!]!
+  tags: [Tag!]!
+  filesByTag(tagName: String!, pagination: PaginationInput): FilePage!
+  folder(id: ID!): Folder
+  myFolders(limit: Int, offset: Int): [Folder!]!
 }
 
 type Mutation {
-	register(email: String!, password: String!): AuthPayload!
-	login(email: String!, password: String!): AuthPayload!
-	# upload registration (metadata-only) - file content via REST or GraphQL upload
-	registerFile(input: RegisterFileInput!): RegisterFilePayload!
-	deleteFile(userFileID: UUID!): DeletePayload!
-	# optional: GraphQL multipart upload, see Upload scalar
-	# uploadFile(file: Upload!): RegisterFilePayload!
+  register(email: String!, password: String!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  # upload registration (metadata-only) - file content via REST or GraphQL upload
+  registerFile(input: RegisterFileInput!): RegisterFilePayload!
+  deleteFile(userFileID: UUID!): DeletePayload!
+  createShare(input: ShareCreateInput!): ShareCreatePayload!
+  revokeShare(token: String!): Boolean!
+  addTagToFile(fileId: UUID!, tagName: String!): Boolean!
+  removeTagFromFile(fileId: UUID!, tagName: String!): Boolean!
+  createTag(name: String!): Tag!
+  deleteTag(name: String!): Boolean!
+  createFolder(input: CreateFolderInput!): Folder!
+  renameFolder(folderId: ID!, name: String!): Folder!
+  deleteFolder(folderId: ID!): Boolean!
+  moveFileToFolder(userFileId: ID!, folderId: ID): Boolean!
+  shareFolder(folderId: ID!, public: Boolean, expiresAt: Time, maxDownloads: Int): ShareCreatePayload!
+  # optional: GraphQL multipart upload, see Upload scalar
+  # uploadFile(file: Upload!): RegisterFilePayload!
 }
 
 type AuthPayload {
-	token: String!
-	user: User!
+  token: String!
+  user: User!
 }
 
 type User {
-	id: UUID!
-	email: String!
-	role: String!
-	createdAt: Time!
+  id: UUID!
+  email: String!
+  role: String!
+  createdAt: Time!
 }
 
 type FileObject {
-	id: UUID!
-	hash: String!
-	storagePath: String!
-	sizeBytes: Int!
-	mimeType: String
-	refCount: Int!
-	createdAt: Time!
+  id: UUID!
+  hash: String!
+  storagePath: String!
+  sizeBytes: Int!
+  mimeType: String
+  refCount: Int!
+  createdAt: Time!
 }
 
 type UserFile {
-	id: UUID!
-	user: User!
-	fileObject: FileObject!
-	filename: String!
-	visibility: String!
-	uploadedAt: Time!
+  id: UUID!
+  user: User!
+  fileObject: FileObject!
+  filename: String!
+  visibility: String!
+  uploadedAt: Time!
+  tags: [Tag!]!
 }
 
 input RegisterFileInput {
-	filename: String!
-	hash: String!
-	sizeBytes: Int!
-	mimeType: String
+  filename: String!
+  hash: String!
+  sizeBytes: Int!
+  mimeType: String
 }
 
 type RegisterFilePayload {
-	fileObject: FileObject!
-	userFile: UserFile!
+  fileObject: FileObject!
+  userFile: UserFile!
 }
 
 type DeletePayload {
-	success: Boolean!
+  success: Boolean!
 }
 
 input FileFilter {
-	mimeTypes: [String!]
-	minSize: Int
-	maxSize: Int
-	dateFrom: Time
-	dateTo: Time
-	uploaderEmail: String
-	filenameContains: String
+  filenameContains: String
+  mimeTypes: [String!]
+  minSize: Int
+  maxSize: Int
+  dateFrom: Time
+  dateTo: Time
+  tags: [String!]
+  uploaderEmail: String
 }
 
 input PaginationInput {
-	limit: Int = 20
-	offset: Int = 0
+  limit: Int = 20
+  offset: Int = 0
 }
 
 type FilePage {
-	items: [UserFile!]!
-	totalCount: Int!
+  items: [UserFile!]!
+  totalCount: Int!
 }
 
 type StorageStats {
-	totalDedupedBytes: Int!
-	originalBytes: Int!
-	savedBytes: Int!
-	savedPercent: Float!
+  totalDedupedBytes: Int!
+  originalBytes: Int!
+  savedBytes: Int!
+  savedPercent: Float!
+}
+
+type AdminStats {
+  totalUsers: Int!
+  totalFileObjects: Int!
+  totalUserFiles: Int!
+  deduplicatedStorageBytes: Int!
+  logicalStorageBytes: Int!
+  dedupSavingsBytes: Int!
+}
+
+type DownloadRecord {
+  id: ID!
+  shareId: ID
+  fileId: ID!
+  downloaderId: ID
+  ip: String
+  userAgent: String
+  createdAt: Time!
+}
+
+type Share {
+  id: ID!
+  fileId: ID
+  folderId: ID
+  ownerId: ID!
+  token: String!
+  public: Boolean!
+  expiresAt: Time
+  maxDownloads: Int
+  createdAt: Time!
+}
+
+type ShareCreatePayload {
+  token: String!
+  url: String!
+  expiresAt: Time
+}
+
+input ShareCreateInput {
+  fileId: ID
+  folderId: ID
+  public: Boolean
+  expiresAt: Time
+  maxDownloads: Int
+}
+
+type Tag {
+  id: UUID!
+  name: String!
+}
+
+type Folder {
+  id: ID!
+  name: String!
+  ownerId: ID!
+  parentId: ID
+  createdAt: Time!
+  files(limit: Int, offset: Int): [UserFile!]!
+  subfolders(limit: Int, offset: Int): [Folder!]!
+}
+
+input CreateFolderInput {
+  name: String!
+  parentId: ID
 }
 
 # optional Upload scalar if you want direct GraphQL uploads

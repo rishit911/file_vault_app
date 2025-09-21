@@ -79,3 +79,31 @@ func LoginHandler(db *sqlx.DB) http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	}
 }
+
+func MeHandler(db *sqlx.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userIDVal := ctx.Value(userIDKey)
+		if userIDVal == nil {
+			http.Error(w, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		userID := userIDVal.(string)
+
+		var user struct {
+			ID        string    `json:"id" db:"id"`
+			Email     string    `json:"email" db:"email"`
+			Role      string    `json:"role" db:"role"`
+			CreatedAt time.Time `json:"createdAt" db:"created_at"`
+		}
+
+		err := db.Get(&user, "SELECT id, email, role, created_at FROM users WHERE id=$1", userID)
+		if err != nil {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(user)
+	}
+}

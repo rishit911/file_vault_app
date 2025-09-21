@@ -1,12 +1,14 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	dbpkg "github.com/rishit911/file_vault_proj-backend/internal/db"
 )
 
 func DeleteFileHandler(db *sqlx.DB) http.HandlerFunc {
@@ -49,10 +51,18 @@ func DeleteFileHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
-		// get file_object_id
+		// get file_object_id and size for quota update
+		var fileSize int64
 		if err := tx.Get(&fileObjectID, "SELECT file_object_id FROM user_files WHERE id=$1", id); err != nil {
 			tx.Rollback()
 			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		
+		// get file size for storage quota update
+		if err := tx.Get(&fileSize, "SELECT size_bytes FROM file_objects WHERE id=$1", fileObjectID); err != nil {
+			tx.Rollback()
+			http.Error(w, "file size fetch failed", http.StatusInternalServerError)
 			return
 		}
 
@@ -84,6 +94,13 @@ func DeleteFileHandler(db *sqlx.DB) http.HandlerFunc {
 				return
 			}
 
+			// Update user's storage usage (decrement)
+			ctx := r.Context()
+			if err := dbpkg.UpdateUserStorageUsedDelta(ctx, db.DB, userID, -fileSize); err != nil {
+				// Log error but don't fail the delete since it's already completed
+				fmt.Printf("warning: failed to update user storage usage: %v\n", err)
+			}
+
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -105,6 +122,13 @@ func DeleteFileHandler(db *sqlx.DB) http.HandlerFunc {
 		if err := tx.Commit(); err != nil {
 			http.Error(w, "commit failed", http.StatusInternalServerError)
 			return
+		}
+
+		// Update user's storage usage (decrement)
+		ctx := r.Context()
+		if err := dbpkg.UpdateUserStorageUsedDelta(ctx, db.DB, userID, -fileSize); err != nil {
+			// Log error but don't fail the delete since it's already completed
+			fmt.Printf("warning: failed to update user storage usage: %v\n", err)
 		}
 
 		// remove blob from disk but don't fail the API if remove fails
