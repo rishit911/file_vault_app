@@ -102,6 +102,7 @@ input FileFilter {
   dateTo: Time
   tags: [String!]
   uploaderEmail: String
+  folderId: ID
 }
 
 input PaginationInput {

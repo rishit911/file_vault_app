@@ -406,6 +406,13 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 			continue
 		}
 
+		// Get tags for this file
+		tags, err := r.getTagsForUserFile(ctx, fo.ID)
+		if err != nil {
+			// Log error but don't fail the query
+			tags = []*model.Tag{}
+		}
+
 		userFile := &model.UserFile{
 			ID:   uf.ID,
 			User: &model.User{ID: userID},
@@ -421,6 +428,7 @@ func (r *queryResolver) Files(ctx context.Context, filter *model.FileFilter, pag
 			Filename:   uf.Filename,
 			Visibility: uf.Visibility,
 			UploadedAt: uf.UploadedAt,
+			Tags:       tags,
 		}
 
 		items = append(items, userFile)
@@ -1023,12 +1031,78 @@ func (r *mutationResolver) RenameFolder(ctx context.Context, folderID string, na
 
 // DeleteFolder is the resolver for the deleteFolder field.
 func (r *mutationResolver) DeleteFolder(ctx context.Context, folderID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteFolder - deleteFolder"))
+	userIDVal := ctx.Value(userIDKey)
+	if userIDVal == nil {
+		// Debug: try different context keys
+		if v := ctx.Value("userID"); v != nil {
+			userIDVal = v
+		} else {
+			// Try the server.UserIDKey directly
+			if v := ctx.Value(server.UserIDKey); v != nil {
+				userIDVal = v
+			} else {
+				return false, fmt.Errorf("unauthenticated - no user context found")
+			}
+		}
+	}
+	userID := userIDVal.(string)
+
+	// Delete the folder using the database function
+	err := db.DeleteFolder(ctx, r.DB.DB, folderID, userID)
+	if err != nil {
+		return false, fmt.Errorf("failed to delete folder: %v", err)
+	}
+
+	return true, nil
 }
 
 // MoveFileToFolder is the resolver for the moveFileToFolder field.
 func (r *mutationResolver) MoveFileToFolder(ctx context.Context, userFileID string, folderID *string) (bool, error) {
-	panic(fmt.Errorf("not implemented: MoveFileToFolder - moveFileToFolder"))
+	userIDVal := ctx.Value(userIDKey)
+	if userIDVal == nil {
+		// Debug: try different context keys
+		if v := ctx.Value("userID"); v != nil {
+			userIDVal = v
+		} else {
+			// Try the server.UserIDKey directly
+			if v := ctx.Value(server.UserIDKey); v != nil {
+				userIDVal = v
+			} else {
+				return false, fmt.Errorf("unauthenticated - no user context found")
+			}
+		}
+	}
+	userID := userIDVal.(string)
+
+	// Verify the user owns the file
+	var ownerID string
+	err := r.DB.Get(&ownerID, "SELECT user_id FROM user_files WHERE id = $1", userFileID)
+	if err != nil {
+		return false, fmt.Errorf("file not found")
+	}
+	if ownerID != userID {
+		return false, fmt.Errorf("permission denied")
+	}
+
+	// If folderID is provided, verify the user owns the folder
+	if folderID != nil && *folderID != "" {
+		var folderOwnerID string
+		err := r.DB.Get(&folderOwnerID, "SELECT owner_id FROM folders WHERE id = $1", *folderID)
+		if err != nil {
+			return false, fmt.Errorf("folder not found")
+		}
+		if folderOwnerID != userID {
+			return false, fmt.Errorf("folder permission denied")
+		}
+	}
+
+	// Update the file's folder_id
+	_, err = r.DB.Exec("UPDATE user_files SET folder_id = $1 WHERE id = $2", folderID, userFileID)
+	if err != nil {
+		return false, fmt.Errorf("failed to move file: %v", err)
+	}
+
+	return true, nil
 }
 
 // ShareFolder is the resolver for the shareFolder field.

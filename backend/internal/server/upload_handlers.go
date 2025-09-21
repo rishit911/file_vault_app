@@ -55,6 +55,12 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 			return
 		}
 
+		// Get optional folder ID from form data
+		var folderID *string
+		if folderId := r.FormValue("folderId"); folderId != "" {
+			folderID = &folderId
+		}
+
 		// Calculate total upload size for quota check
 		var totalUploadSize int64
 		for _, fh := range files {
@@ -195,7 +201,7 @@ func UploadHandler(db *sqlx.DB) http.HandlerFunc {
 
 			// create user_files entry
 			var userFileID string
-			err = db.Get(&userFileID, "INSERT INTO user_files (id, user_id, file_object_id, filename) VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id", userID, fo.ID, fh.Filename)
+			err = db.Get(&userFileID, "INSERT INTO user_files (id, user_id, file_object_id, filename, folder_id) VALUES (gen_random_uuid(), $1, $2, $3, $4) RETURNING id", userID, fo.ID, fh.Filename, folderID)
 			if err != nil {
 				http.Error(w, "create user_file failed: "+err.Error(), http.StatusInternalServerError)
 				return

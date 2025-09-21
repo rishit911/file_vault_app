@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { graphqlQuery, GRAPHQL_QUERIES, filesAPI } from '../api';
+import { graphqlQuery, GRAPHQL_QUERIES, GRAPHQL_MUTATIONS, filesAPI } from '../api';
 import { formatBytes, formatRelativeTime, getMimeTypeIcon, debounce } from '../utils';
 import FileUploader from '../components/FileUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ShareModal from '../components/ShareModal';
+import FolderTree from '../components/FolderTree';
+import MoveToFolderModal from '../components/MoveToFolderModal';
 import { 
   Search, 
   Filter, 
@@ -11,7 +13,9 @@ import {
   Trash2, 
   Tag,
   FileText,
-  RefreshCw
+  RefreshCw,
+  FolderOpen,
+  Move
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -46,6 +50,7 @@ interface FileFilter {
   dateFrom?: string;
   dateTo?: string;
   tags: string[];
+  folderId?: string | null;
 }
 
 export default function MyFiles() {
@@ -56,10 +61,12 @@ export default function MyFiles() {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FileFilter>({
     search: '',
     mimeTypes: [],
     tags: [],
+    folderId: null,
   });
   const [shareModal, setShareModal] = useState<{
     isOpen: boolean;
@@ -70,12 +77,24 @@ export default function MyFiles() {
     fileId: '',
     filename: '',
   });
+  const [moveModal, setMoveModal] = useState<{
+    isOpen: boolean;
+    fileIds: string[];
+  }>({
+    isOpen: false,
+    fileIds: [],
+  });
 
   const pageSize = 20;
 
   useEffect(() => {
     fetchFiles();
-  }, [currentPage, filter]);
+  }, [currentPage, filter, selectedFolderId]);
+
+  useEffect(() => {
+    setFilter(prev => ({ ...prev, folderId: selectedFolderId }));
+    setCurrentPage(1);
+  }, [selectedFolderId]);
 
   const debouncedSearch = debounce((searchTerm: string) => {
     setFilter(prev => ({ ...prev, search: searchTerm }));
@@ -95,6 +114,7 @@ export default function MyFiles() {
           dateFrom: filter.dateFrom,
           dateTo: filter.dateTo,
           tags: filter.tags.length > 0 ? filter.tags : undefined,
+          folderId: filter.folderId,
         },
         pagination: {
           limit: pageSize,
@@ -189,31 +209,76 @@ export default function MyFiles() {
     });
   };
 
+  const handleMoveFiles = (fileIds: string[]) => {
+    setMoveModal({
+      isOpen: true,
+      fileIds,
+    });
+  };
+
+  const closeMoveModal = () => {
+    setMoveModal({
+      isOpen: false,
+      fileIds: [],
+    });
+  };
+
+  const handleMoveComplete = () => {
+    setSelectedFiles(new Set());
+    fetchFiles();
+    closeMoveModal();
+  };
+
+  const handleFolderSelect = (folderId: string | null) => {
+    setSelectedFolderId(folderId);
+  };
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Files</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {totalCount} files • {formatBytes(files.reduce((sum, f) => sum + f.fileObject.sizeBytes, 0))} total
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={refreshFiles}
-          disabled={isRefreshing}
-          className="btn-secondary"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+    <div className="flex h-full">
+      {/* Sidebar with Folder Tree */}
+      <div className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <FolderTree 
+          onFolderSelect={handleFolderSelect}
+          selectedFolderId={selectedFolderId}
+          onRefresh={fetchFiles}
+        />
       </div>
 
-      {/* File Uploader */}
-      <FileUploader onUploaded={fetchFiles} />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col h-full">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">My Files</h1>
+                {selectedFolderId && (
+                  <>
+                    <span className="text-gray-400">/</span>
+                    <FolderOpen className="h-5 w-5 text-blue-500" />
+                    <span className="text-lg text-gray-700 dark:text-gray-300">Current Folder</span>
+                  </>
+                )}
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                {totalCount} files • {formatBytes(files.reduce((sum, f) => sum + f.fileObject.sizeBytes, 0))} total
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={refreshFiles}
+              disabled={isRefreshing}
+              className="btn-secondary"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+
+          {/* File Uploader */}
+          <FileUploader onUploaded={fetchFiles} selectedFolderId={selectedFolderId} />
 
       {/* Search and Filters */}
       <div className="card p-4">
@@ -291,22 +356,30 @@ export default function MyFiles() {
         )}
       </div>
 
-      {/* Bulk Actions */}
-      {selectedFiles.size > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {selectedFiles.size} files selected
-            </span>
-            <div className="flex space-x-2">
-              <button type="button" onClick={handleBulkDelete} className="btn-danger">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Selected
-              </button>
+          {/* Bulk Actions */}
+          {selectedFiles.size > 0 && (
+            <div className="card p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedFiles.size} files selected
+                </span>
+                <div className="flex space-x-2">
+                  <button 
+                    type="button" 
+                    onClick={() => handleMoveFiles(Array.from(selectedFiles))} 
+                    className="btn-secondary"
+                  >
+                    <Move className="h-4 w-4 mr-2" />
+                    Move to Folder
+                  </button>
+                  <button type="button" onClick={handleBulkDelete} className="btn-danger">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
       {/* Files Table */}
       <div className="card overflow-hidden">
@@ -407,6 +480,14 @@ export default function MyFiles() {
                         <div className="flex space-x-2">
                           <button
                             type="button"
+                            onClick={() => handleMoveFiles([file.id])}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400"
+                            title="Move to folder"
+                          >
+                            <Move className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleShare(file.id, file.filename)}
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400"
                             title="Share file"
@@ -461,13 +542,23 @@ export default function MyFiles() {
         )}
       </div>
 
-      {/* Share Modal */}
-      <ShareModal
-        isOpen={shareModal.isOpen}
-        onClose={closeShareModal}
-        fileId={shareModal.fileId}
-        filename={shareModal.filename}
-      />
+          {/* Share Modal */}
+          <ShareModal
+            isOpen={shareModal.isOpen}
+            onClose={closeShareModal}
+            fileId={shareModal.fileId}
+            filename={shareModal.filename}
+          />
+
+          {/* Move to Folder Modal */}
+          <MoveToFolderModal
+            isOpen={moveModal.isOpen}
+            onClose={closeMoveModal}
+            fileIds={moveModal.fileIds}
+            onMoveComplete={handleMoveComplete}
+          />
+        </div>
+      </div>
     </div>
   );
 }

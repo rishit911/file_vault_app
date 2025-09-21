@@ -48,6 +48,7 @@ type FileFilter struct {
 	DateTo           *time.Time `json:"dateTo,omitempty"`
 	Tags             []string   `json:"tags,omitempty"`
 	UploaderEmail    *string    `json:"uploaderEmail,omitempty"`
+	FolderID         *string    `json:"folderId,omitempty"`
 }
 
 type FileObject struct {

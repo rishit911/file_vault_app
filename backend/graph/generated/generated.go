@@ -1158,6 +1158,7 @@ input FileFilter {
   dateTo: Time
   tags: [String!]
   uploaderEmail: String
+  folderId: ID
 }
 
 input PaginationInput {
@@ -6663,7 +6664,7 @@ func (ec *executionContext) unmarshalInputFileFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"filenameContains", "mimeTypes", "minSize", "maxSize", "dateFrom", "dateTo", "tags", "uploaderEmail"}
+	fieldsInOrder := [...]string{"filenameContains", "mimeTypes", "minSize", "maxSize", "dateFrom", "dateTo", "tags", "uploaderEmail", "folderId"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6726,6 +6727,13 @@ func (ec *executionContext) unmarshalInputFileFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.UploaderEmail = data
+		case "folderId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("folderId"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FolderID = data
 		}
 	}
 

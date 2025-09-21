@@ -347,6 +347,30 @@ export const GRAPHQL_MUTATIONS = {
       revokeShare(token: $token)
     }
   `,
+  
+  RENAME_FOLDER: `
+    mutation RenameFolder($folderId: ID!, $name: String!) {
+      renameFolder(folderId: $folderId, name: $name) {
+        id
+        name
+        ownerId
+        parentId
+        createdAt
+      }
+    }
+  `,
+  
+  DELETE_FOLDER: `
+    mutation DeleteFolder($folderId: ID!) {
+      deleteFolder(folderId: $folderId)
+    }
+  `,
+  
+  MOVE_FILE_TO_FOLDER: `
+    mutation MoveFileToFolder($userFileId: ID!, $folderId: ID) {
+      moveFileToFolder(userFileId: $userFileId, folderId: $folderId)
+    }
+  `,
 };
 
 export default api;

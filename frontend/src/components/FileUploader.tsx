@@ -16,9 +16,10 @@ interface FileUploadItem {
 interface FileUploaderProps {
   onUploaded?: () => void;
   className?: string;
+  selectedFolderId?: string | null;
 }
 
-export default function FileUploader({ onUploaded, className = '' }: FileUploaderProps) {
+export default function FileUploader({ onUploaded, className = '', selectedFolderId }: FileUploaderProps) {
   const [uploadItems, setUploadItems] = useState<FileUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -44,6 +45,11 @@ export default function FileUploader({ onUploaded, className = '' }: FileUploade
 
         const formData = new FormData();
         formData.append('files', item.file);
+        
+        // Add folder ID if selected
+        if (selectedFolderId) {
+          formData.append('folderId', selectedFolderId);
+        }
 
         await filesAPI.upload(formData, (progress) => {
           setUploadItems((prev) =>

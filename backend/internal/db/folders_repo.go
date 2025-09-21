@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -158,6 +159,47 @@ type FolderFileRow struct {
 	UploadedAt time.Time
 	Visibility string
 	FileObject FileStreamInfo
+}
+
+// DeleteFolder deletes a folder and moves its files to the root (folder_id = NULL)
+func DeleteFolder(ctx context.Context, db *sql.DB, folderID string, userID string) error {
+	// Start a transaction
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// First, verify the user owns the folder
+	var ownerID string
+	err = tx.QueryRowContext(ctx, "SELECT owner_id FROM folders WHERE id = $1", folderID).Scan(&ownerID)
+	if err != nil {
+		return err
+	}
+	if ownerID != userID {
+		return fmt.Errorf("permission denied: user does not own this folder")
+	}
+
+	// Move all files in this folder to root (set folder_id to NULL)
+	_, err = tx.ExecContext(ctx, "UPDATE user_files SET folder_id = NULL WHERE folder_id = $1", folderID)
+	if err != nil {
+		return err
+	}
+
+	// Move all subfolders to root (set parent_id to NULL)
+	_, err = tx.ExecContext(ctx, "UPDATE folders SET parent_id = NULL WHERE parent_id = $1", folderID)
+	if err != nil {
+		return err
+	}
+
+	// Delete the folder
+	_, err = tx.ExecContext(ctx, "DELETE FROM folders WHERE id = $1", folderID)
+	if err != nil {
+		return err
+	}
+
+	// Commit the transaction
+	return tx.Commit()
 }
 
 func getStringValue(s *string) string {

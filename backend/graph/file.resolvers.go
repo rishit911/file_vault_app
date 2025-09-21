@@ -36,11 +36,8 @@ func buildFilterSQL(f *model.FileFilter, args *[]interface{}) string {
 		*args = append(*args, "%"+*f.FilenameContains+"%")
 		idx++
 	}
-	if f.UploaderEmail != nil && *f.UploaderEmail != "" {
-		parts = append(parts, fmt.Sprintf("u.email = $%d", idx))
-		*args = append(*args, *f.UploaderEmail)
-		idx++
-	}
+	// Note: UploaderEmail filter is not applicable for user's own files query
+	// as all files returned belong to the authenticated user
 	if f.DateFrom != nil {
 		parts = append(parts, fmt.Sprintf("uf.uploaded_at >= $%d", idx))
 		*args = append(*args, *f.DateFrom)
@@ -57,6 +54,18 @@ func buildFilterSQL(f *model.FileFilter, args *[]interface{}) string {
 		parts = append(parts, fmt.Sprintf("EXISTS (SELECT 1 FROM file_tags ft JOIN tags t ON ft.tag_id = t.id WHERE ft.file_id = fo.id AND t.name = ANY($%d))", idx))
 		*args = append(*args, pq.Array(f.Tags))
 		idx++
+	}
+
+	// folder filtering
+	if f.FolderID != nil {
+		if *f.FolderID == "" {
+			// Empty string means root folder (no folder)
+			parts = append(parts, "uf.folder_id IS NULL")
+		} else {
+			parts = append(parts, fmt.Sprintf("uf.folder_id = $%d", idx))
+			*args = append(*args, *f.FolderID)
+			idx++
+		}
 	}
 
 	if len(parts) == 0 {
