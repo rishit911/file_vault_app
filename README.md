@@ -1,5 +1,14 @@
 # FileVault — Secure File Storage & Sharing Platform
 
+## 🌐 **LIVE DEMO ON AWS**
+**🚀 Access the live application**: [http://44.220.163.39:3000/dashboard](http://44.220.163.39:3000/dashboard)
+
+**👤 Admin Login Credentials:**
+- **Email**: `rishit@example.com`
+- **Password**: `12345678`
+
+---
+
 A modern, secure file storage and sharing platform built with Go backend and React frontend.
 
 ## Features
