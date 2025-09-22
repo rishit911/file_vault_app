@@ -135,36 +135,57 @@ export default function Shared() {
 
     const handleDownloadSharedFile = async (share: UserShare) => {
         try {
-            // Create a download URL for the shared file
-            const downloadUrl = `/api/v1/shared-files/${share.id}/download`;
+            // Get the API base URL from environment
+            const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+            const downloadUrl = `${API_BASE}/api/v1/shared-files/${share.id}/download`;
             
-            // Create a temporary link and trigger download
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = share.file.filename;
+            console.log('Download attempt:', {
+                shareId: share.id,
+                filename: share.file.filename,
+                downloadUrl,
+                API_BASE
+            });
             
-            // Add authorization header by creating a form with token
+            // Get the authorization token
             const token = localStorage.getItem('fv_token');
-            if (token) {
-                // Use fetch to download with authorization
-                const response = await fetch(downloadUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    link.href = url;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                    toast.success('File downloaded successfully');
-                } else {
-                    throw new Error('Download failed');
+            if (!token) {
+                console.error('No authentication token found');
+                toast.error('Authentication required');
+                return;
+            }
+            
+            console.log('Making fetch request to:', downloadUrl);
+            
+            // Use fetch to download with authorization
+            const response = await fetch(downloadUrl, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
+            });
+            
+            console.log('Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                
+                // Create a temporary link and trigger download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = share.file.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                toast.success('File downloaded successfully');
+            } else {
+                const errorText = await response.text();
+                console.error('Download failed:', response.status, errorText);
+                throw new Error(`Download failed: ${response.status} ${errorText}`);
             }
         } catch (error) {
             console.error('Failed to download file:', error);

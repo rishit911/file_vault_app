@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,21 +16,29 @@ import (
 
 func SharedFileDownloadHandler(dbConn *sqlx.DB, fileBasePath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("SharedFileDownloadHandler: Request received - Method: %s, Path: %s", r.Method, r.URL.Path)
+		
 		// Get user ID from context (set by auth middleware)
 		userID, ok := r.Context().Value(UserIDKey).(string)
 		if !ok {
+			log.Printf("SharedFileDownloadHandler: No user ID in context")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		log.Printf("SharedFileDownloadHandler: User ID: %s", userID)
 
 		// Get share ID from URL path
 		path := strings.TrimPrefix(r.URL.Path, "/api/v1/shared-files/")
 		shareIDStr := strings.TrimSuffix(path, "/download")
+		log.Printf("SharedFileDownloadHandler: Extracted share ID string: '%s'", shareIDStr)
+		
 		shareID, err := uuid.Parse(shareIDStr)
 		if err != nil {
+			log.Printf("SharedFileDownloadHandler: Invalid share ID: %s, error: %v", shareIDStr, err)
 			http.Error(w, "Invalid share ID", http.StatusBadRequest)
 			return
 		}
+		log.Printf("SharedFileDownloadHandler: Parsed share ID: %s", shareID)
 
 		currentUserID, err := uuid.Parse(userID)
 		if err != nil {

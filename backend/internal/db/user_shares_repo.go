@@ -184,7 +184,6 @@ func SearchUsersByUsernameOrEmail(query string, limit int) ([]*User, error) {
 		SELECT id, email, username, role, created_at
 		FROM users
 		WHERE (username ILIKE $1 OR email ILIKE $1)
-		AND username IS NOT NULL
 		ORDER BY 
 			CASE WHEN username ILIKE $1 THEN 1 ELSE 2 END,
 			username, email
@@ -215,6 +214,16 @@ func GetUserByUsername(username string) (*User, error) {
 	user := &User{}
 	query := `SELECT id, email, username, role, created_at FROM users WHERE username = $1`
 	err := DB.QueryRow(query, username).Scan(&user.ID, &user.Email, &user.Username, &user.Role, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func GetUserByUsernameOrEmail(identifier string) (*User, error) {
+	user := &User{}
+	query := `SELECT id, email, username, role, created_at FROM users WHERE username = $1 OR email = $1`
+	err := DB.QueryRow(query, identifier).Scan(&user.ID, &user.Email, &user.Username, &user.Role, &user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +310,8 @@ func GetFileObjectByID(fileObjectID uuid.UUID) (*FileObject, error) {
 	}
 	return fileObject, nil
 }
+
+
 
 func GetUserFileByFileObjectID(fileObjectID, ownerID uuid.UUID) (*UserFileWithDetails, error) {
 	userFile := &UserFileWithDetails{}

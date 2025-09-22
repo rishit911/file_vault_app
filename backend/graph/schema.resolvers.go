@@ -1372,7 +1372,7 @@ func (r *mutationResolver) ShareWithUser(ctx context.Context, input model.ShareW
 	}
 
 	// Find the user to share with
-	targetUser, err := db.GetUserByUsername(input.Username)
+	targetUser, err := db.GetUserByUsernameOrEmail(input.Username)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %s", input.Username)
 	}
