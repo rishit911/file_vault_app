@@ -17,15 +17,27 @@ dist/
 
 # Docker
 docker-compose.override.yml
+
+# Local docker env files with real secrets
 .env.docker.local
 backend/.env.docker.local
+frontend/.env.docker.local
 
-# ignore local docker env file and uploaded files
-.env.docker.local
-backend/.env.docker
+# Local migration / DB seed files (do not commit secrets)
+*.sql.local
 
-# Data files
+# Persisted uploaded files
 data/files/*
+
+# Local runtime binaries
+/backend/server
+/frontend/dist
+
+# OS temp files
+*.swp
+.DS_Store
+.vscode/
+.idea/
 
 # build
 /build

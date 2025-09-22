@@ -1,86 +1,151 @@
-# file_vault_proj — Capstone Task (Day 1)
+# FileVault — Secure File Storage & Sharing Platform
 
-This repository contains the Day 1 skeleton for the file_vault_proj file vault.
+A modern, secure file storage and sharing platform built with Go backend and React frontend.
 
-## What is done (Day 1)
-- Project skeleton for backend and frontend
-- Minimal Go HTTP server with `/health` endpoint
-- Vite React TypeScript frontend with placeholder App
-- Docker Compose skeleton for Postgres + backend + frontend
-- Initial design doc with DB entities and architecture
+## Features
 
-## Quick start
-1. Copy `backend/.env.example` -> `backend/.env`
-2. From `infra/` run: `docker compose up -d`
-3. Start backend: `cd backend && go run ./cmd/server`
-4. Start frontend: `cd frontend && npm run dev`
-## L
-ocal Docker Development
+- 🔐 **Secure Authentication** - JWT-based user authentication
+- 📁 **File Management** - Upload, organize, and manage files with folders
+- 🔗 **File Sharing** - Generate secure public links with expiration
+- 👥 **Admin Panel** - User management and system administration
+- 🏷️ **File Tagging** - Organize files with custom tags
+- 🔍 **Search & Filter** - Find files quickly with advanced search
+- 📊 **Storage Quotas** - Per-user storage limits and usage tracking
+- 🐳 **Docker Ready** - Full containerization with Docker Compose
 
-1. Copy backend env example:
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose v2
+- Go 1.21+ (for local development)
+- Node.js 18+ (for local development)
+
+### 1. Clone and Setup
 ```bash
-cp backend/.env.example backend/.env.dev
-# Edit backend/.env.dev if you need to change DB password or port.
+git clone <repository-url>
+cd file_vault_proj
+cp .env.docker .env.docker.local
+# Edit .env.docker.local and set secure POSTGRES_PASSWORD
 ```
 
-2. Start services:
+### 2. Start with Docker Compose
 ```bash
-./infra/up.sh
+docker compose up --build -d
 ```
 
-3. Verify:
-- Backend health: `curl http://localhost:8080/health` -> OK
-- Frontend: open http://localhost:3000
-- Adminer: http://localhost:8081 (login: user=filevault_user, pass=filevault_pass, db=filevault_db, port=5433)
+### 3. Access the Application
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8080
 
-4. Stop services:
+### 4. Admin Login (Default)
+- **Email**: `admin@filevault.com`
+- **Password**: `admin123`
+
+⚠️ **Security Note**: Change the default admin password after first login in production!
+
+## Development
+
+### Local Development Setup
+
+1. **Backend Setup**:
 ```bash
-./infra/down.sh
+cd backend
+cp .env.example .env.dev
+# Edit .env.dev with your database settings
+go mod download
+go run ./cmd/server/
 ```
 
-## Running with Docker Compose
-
-1. Copy env file:
+2. **Frontend Setup**:
 ```bash
-cp backend/.env.example backend/.env.dev
-# Edit backend/.env.dev if needed
+cd frontend
+npm install
+npm run dev
 ```
 
-2. Start services:
+3. **Database Setup**:
 ```bash
-cd infra
-docker compose up -d --build
+# Start PostgreSQL with Docker
+docker run --name filevault-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d postgres:15-alpine
+# Run migrations (they auto-run with docker-compose)
 ```
 
-3. Verify:
-- Backend health: `curl http://localhost:8080/health` → OK
-- Frontend: http://localhost:3000
-- Postgres: exposed on localhost:5433 (connect with psql or Adminer)
+### Admin User Management
 
-4. Stop services:
+A default admin user is automatically created when the database is initialized:
+
+- **Email**: `admin@filevault.com`
+- **Password**: `admin123`
+
+**Alternative: Create Admin User Manually**
 ```bash
-cd infra
+# Using Docker Compose
+docker compose exec db psql -U filevault_user -d filevault_db -c "INSERT INTO users (email, password_hash, role) VALUES ('admin@example.com', crypt('your_password', gen_salt('bf')), 'admin');"
+
+# Or use the provided script
+docker compose exec db psql -U filevault_user -d filevault_db -f /scripts/create-admin.sql
+```
+
+**Security Notes:**
+- ⚠️ **Change the default password** after first login
+- 🔒 Use strong passwords in production
+- 🔄 Rotate admin passwords regularly
+- 🛡️ Never commit real passwords to the repository
+
+### Docker Commands
+
+```bash
+# Start all services
+docker compose up --build -d
+
+# View service status
+docker compose ps
+
+# View logs
+docker compose logs -f backend frontend db
+
+# Stop services
+docker compose down
+
+# Clean up (removes volumes)
 docker compose down -v
 ```
 
-5. Commit changes (do NOT commit .env.dev):
-```bash
-git add infra/docker-compose.yml README.md
-git commit -m "chore(docker): configure docker-compose to run postgres, backend, frontend together"
+## API Documentation
+
+The backend provides both REST and GraphQL APIs:
+
+- **REST API**: http://localhost:8080/api/
+- **GraphQL**: http://localhost:8080/query
+- **Health Check**: http://localhost:8080/health
+
+## Project Structure
+
+```
+file_vault_proj/
+├── backend/                 # Go backend
+│   ├── cmd/
+│   │   ├── server/         # Main server
+│   │   └── seed_admin/     # Admin user seeding utility
+│   ├── internal/           # Internal packages
+│   ├── migrations/         # Database migrations
+│   └── graph/              # GraphQL schema & resolvers
+├── frontend/               # React frontend
+│   ├── src/
+│   └── public/
+├── infra/                  # Infrastructure & docs
+├── data/files/             # Persistent file storage
+└── docker-compose.yml      # Container orchestration
 ```
 
-6. Push to origin main:
-```bash
-git push origin main
-```
+## Contributing
 
-7. Print verification commands for me to run locally:
-```bash
-# from repo root
-cp backend/.env.example backend/.env.dev
-cd infra
-docker compose up -d --build
-docker compose ps
-docker compose logs -f backend
-curl -v http://localhost:8080/health
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `go test ./...` and `npm test`
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
