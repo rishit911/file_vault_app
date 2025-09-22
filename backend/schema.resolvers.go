@@ -13,12 +13,17 @@ import (
 type Resolver struct{}
 
 // Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, email string, password string) (*model.AuthPayload, error) {
+func (r *mutationResolver) Register(ctx context.Context, email string, password string, username *string) (*model.AuthPayload, error) {
 	panic("not implemented")
 }
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*model.AuthPayload, error) {
+	panic("not implemented")
+}
+
+// UpdateUsername is the resolver for the updateUsername field.
+func (r *mutationResolver) UpdateUsername(ctx context.Context, username string) (*model.User, error) {
 	panic("not implemented")
 }
 
@@ -39,6 +44,16 @@ func (r *mutationResolver) CreateShare(ctx context.Context, input model.ShareCre
 
 // RevokeShare is the resolver for the revokeShare field.
 func (r *mutationResolver) RevokeShare(ctx context.Context, token string) (bool, error) {
+	panic("not implemented")
+}
+
+// ShareWithUser is the resolver for the shareWithUser field.
+func (r *mutationResolver) ShareWithUser(ctx context.Context, input model.ShareWithUserInput) (*model.UserShare, error) {
+	panic("not implemented")
+}
+
+// UnshareWithUser is the resolver for the unshareWithUser field.
+func (r *mutationResolver) UnshareWithUser(ctx context.Context, userShareID string) (bool, error) {
 	panic("not implemented")
 }
 
@@ -137,6 +152,21 @@ func (r *queryResolver) ListShares(ctx context.Context, limit *int, offset *int)
 	panic("not implemented")
 }
 
+// SharedWithMe is the resolver for the sharedWithMe field.
+func (r *queryResolver) SharedWithMe(ctx context.Context, limit *int, offset *int) ([]*model.UserShare, error) {
+	panic("not implemented")
+}
+
+// MyUserShares is the resolver for the myUserShares field.
+func (r *queryResolver) MyUserShares(ctx context.Context, limit *int, offset *int) ([]*model.UserShare, error) {
+	panic("not implemented")
+}
+
+// SearchUsers is the resolver for the searchUsers field.
+func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
+	panic("not implemented")
+}
+
 // Tags is the resolver for the tags field.
 func (r *queryResolver) Tags(ctx context.Context) ([]*model.Tag, error) {
 	panic("not implemented")
@@ -165,3 +195,13 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	type Resolver struct{}
+*/

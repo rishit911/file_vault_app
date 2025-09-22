@@ -18,6 +18,9 @@ type Query {
   stats: StorageStats!
   shareByToken(token: String!): Share
   listShares(limit: Int, offset: Int): [Share!]!
+  sharedWithMe(limit: Int, offset: Int): [UserShare!]!
+  myUserShares(limit: Int, offset: Int): [UserShare!]!
+  searchUsers(query: String!): [User!]!
   tags: [Tag!]!
   filesByTag(tagName: String!, pagination: PaginationInput): FilePage!
   folder(id: ID!): Folder
@@ -25,13 +28,16 @@ type Query {
 }
 
 type Mutation {
-  register(email: String!, password: String!): AuthPayload!
+  register(email: String!, password: String!, username: String): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
+  updateUsername(username: String!): User!
   # upload registration (metadata-only) - file content via REST or GraphQL upload
   registerFile(input: RegisterFileInput!): RegisterFilePayload!
   deleteFile(userFileID: UUID!): DeletePayload!
   createShare(input: ShareCreateInput!): ShareCreatePayload!
   revokeShare(token: String!): Boolean!
+  shareWithUser(input: ShareWithUserInput!): UserShare!
+  unshareWithUser(userShareId: UUID!): Boolean!
   addTagToFile(fileId: UUID!, tagName: String!): Boolean!
   removeTagFromFile(fileId: UUID!, tagName: String!): Boolean!
   createTag(name: String!): Tag!
@@ -53,6 +59,7 @@ type AuthPayload {
 type User {
   id: UUID!
   email: String!
+  username: String
   role: String!
   createdAt: Time!
 }
@@ -185,6 +192,21 @@ type Folder {
 input CreateFolderInput {
   name: String!
   parentId: ID
+}
+
+type UserShare {
+  id: UUID!
+  file: UserFile!
+  owner: User!
+  sharedWith: User!
+  sharedAt: Time!
+  message: String
+}
+
+input ShareWithUserInput {
+  fileId: UUID!
+  username: String!
+  message: String
 }
 
 # optional Upload scalar if you want direct GraphQL uploads

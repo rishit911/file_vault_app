@@ -298,6 +298,64 @@ export const GRAPHQL_QUERIES = {
       }
     }
   `,
+  
+  SHARED_WITH_ME: `
+    query SharedWithMe($limit: Int, $offset: Int) {
+      sharedWithMe(limit: $limit, offset: $offset) {
+        id
+        sharedAt
+        message
+        file {
+          id
+          filename
+          fileObject {
+            id
+            sizeBytes
+            mimeType
+          }
+        }
+        owner {
+          id
+          email
+          username
+        }
+      }
+    }
+  `,
+  
+  MY_USER_SHARES: `
+    query MyUserShares($limit: Int, $offset: Int) {
+      myUserShares(limit: $limit, offset: $offset) {
+        id
+        sharedAt
+        message
+        file {
+          id
+          filename
+          fileObject {
+            id
+            sizeBytes
+            mimeType
+          }
+        }
+        sharedWith {
+          id
+          email
+          username
+        }
+      }
+    }
+  `,
+  
+  SEARCH_USERS: `
+    query SearchUsers($query: String!) {
+      searchUsers(query: $query) {
+        id
+        email
+        username
+      }
+    }
+  `,
 };
 
 // GraphQL mutations
@@ -382,6 +440,48 @@ export const GRAPHQL_MUTATIONS = {
   MOVE_FILE_TO_FOLDER: `
     mutation MoveFileToFolder($userFileId: ID!, $folderId: ID) {
       moveFileToFolder(userFileId: $userFileId, folderId: $folderId)
+    }
+  `,
+  
+  SHARE_WITH_USER: `
+    mutation ShareWithUser($input: ShareWithUserInput!) {
+      shareWithUser(input: $input) {
+        id
+        sharedAt
+        message
+        file {
+          id
+          filename
+        }
+        owner {
+          id
+          email
+          username
+        }
+        sharedWith {
+          id
+          email
+          username
+        }
+      }
+    }
+  `,
+  
+  UNSHARE_WITH_USER: `
+    mutation UnshareWithUser($userShareId: UUID!) {
+      unshareWithUser(userShareId: $userShareId)
+    }
+  `,
+  
+  UPDATE_USERNAME: `
+    mutation UpdateUsername($username: String!) {
+      updateUsername(username: $username) {
+        id
+        email
+        username
+        role
+        createdAt
+      }
     }
   `,
 };

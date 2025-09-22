@@ -125,6 +125,12 @@ type ShareCreatePayload struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 }
 
+type ShareWithUserInput struct {
+	FileID   string  `json:"fileId"`
+	Username string  `json:"username"`
+	Message  *string `json:"message,omitempty"`
+}
+
 type StorageStats struct {
 	TotalDedupedBytes int     `json:"totalDedupedBytes"`
 	OriginalBytes     int     `json:"originalBytes"`
@@ -140,6 +146,7 @@ type Tag struct {
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
+	Username  *string   `json:"username,omitempty"`
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"createdAt"`
 }
@@ -152,4 +159,13 @@ type UserFile struct {
 	Visibility string      `json:"visibility"`
 	UploadedAt time.Time   `json:"uploadedAt"`
 	Tags       []*Tag      `json:"tags"`
+}
+
+type UserShare struct {
+	ID         string    `json:"id"`
+	File       *UserFile `json:"file"`
+	Owner      *User     `json:"owner"`
+	SharedWith *User     `json:"sharedWith"`
+	SharedAt   time.Time `json:"sharedAt"`
+	Message    *string   `json:"message,omitempty"`
 }

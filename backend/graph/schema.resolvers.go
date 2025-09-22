@@ -24,14 +24,25 @@ import (
 const userIDKey = server.UserIDKey
 
 // Register is the resolver for the register field.
-func (r *mutationResolver) Register(ctx context.Context, email string, password string) (*model.AuthPayload, error) {
+func (r *mutationResolver) Register(ctx context.Context, email string, password string, username *string) (*model.AuthPayload, error) {
 	hashed, err := auth.HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
 
 	id := uuid.New().String()
-	_, err = r.DB.Exec(`INSERT INTO users (id, email, password_hash) VALUES ($1,$2,$3)`, id, email, hashed)
+	
+	var query string
+	var args []interface{}
+	if username != nil {
+		query = `INSERT INTO users (id, email, password_hash, username) VALUES ($1,$2,$3,$4)`
+		args = []interface{}{id, email, hashed, *username}
+	} else {
+		query = `INSERT INTO users (id, email, password_hash) VALUES ($1,$2,$3)`
+		args = []interface{}{id, email, hashed}
+	}
+	
+	_, err = r.DB.Exec(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +57,7 @@ func (r *mutationResolver) Register(ctx context.Context, email string, password 
 		User: &model.User{
 			ID:        id,
 			Email:     email,
+			Username:  username,
 			Role:      "user",
 			CreatedAt: time.Now(),
 		},
@@ -1311,6 +1323,243 @@ func (r *Resolver) getUserFileByID(ctx context.Context, userFileID string) (*mod
 		Visibility: row.Visibility,
 		UploadedAt: uploadedAt,
 	}, nil
+}
+
+// UpdateUsername is the resolver for the updateUsername field.
+func (r *mutationResolver) UpdateUsername(ctx context.Context, username string) (*model.User, error) {
+	userID := ctx.Value(userIDKey).(string)
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.UpdateUserUsername(uid, username)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := db.GetUserByID(uid)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.User{
+		ID:        user.ID.String(),
+		Email:     user.Email,
+		Username:  user.Username,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+	}, nil
+}
+
+// ShareWithUser is the resolver for the shareWithUser field.
+func (r *mutationResolver) ShareWithUser(ctx context.Context, input model.ShareWithUserInput) (*model.UserShare, error) {
+	userID := ctx.Value(userIDKey).(string)
+	ownerID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileID, err := uuid.Parse(input.FileID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get file details first to get the file_object_id
+	userFile, err := db.GetUserFileByFileID(fileID, ownerID)
+	if err != nil {
+		return nil, fmt.Errorf("file not found or access denied")
+	}
+
+	// Find the user to share with
+	targetUser, err := db.GetUserByUsername(input.Username)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %s", input.Username)
+	}
+
+	// Create the user share using file_object_id
+	share, err := db.CreateUserShare(userFile.FileObjectID, ownerID, targetUser.ID, input.Message)
+	if err != nil {
+		return nil, err
+	}
+
+	owner, err := db.GetUserByID(ownerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.UserShare{
+		ID:       share.ID.String(),
+		File:     convertUserFileToModel(userFile),
+		Owner:    convertUserToModel(owner),
+		SharedWith: convertUserToModel(targetUser),
+		SharedAt: share.SharedAt,
+		Message:  share.Message,
+	}, nil
+}
+
+// UnshareWithUser is the resolver for the unshareWithUser field.
+func (r *mutationResolver) UnshareWithUser(ctx context.Context, userShareID string) (bool, error) {
+	userID := ctx.Value(userIDKey).(string)
+	ownerID, err := uuid.Parse(userID)
+	if err != nil {
+		return false, err
+	}
+
+	shareID, err := uuid.Parse(userShareID)
+	if err != nil {
+		return false, err
+	}
+
+	err = db.DeleteUserShare(shareID, ownerID)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// SharedWithMe is the resolver for the sharedWithMe field.
+func (r *queryResolver) SharedWithMe(ctx context.Context, limit *int, offset *int) ([]*model.UserShare, error) {
+	userID := ctx.Value(userIDKey).(string)
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	limitVal := 20
+	if limit != nil {
+		limitVal = *limit
+	}
+	offsetVal := 0
+	if offset != nil {
+		offsetVal = *offset
+	}
+
+	shares, err := db.GetUserSharesSharedWithMe(uid, limitVal, offsetVal)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.UserShare
+	for _, share := range shares {
+		result = append(result, &model.UserShare{
+			ID:       share.ID.String(),
+			File:     convertUserShareFileToModel(share),
+			Owner:    convertUserShareOwnerToModel(share),
+			SharedWith: convertUserShareSharedWithToModel(share),
+			SharedAt: share.SharedAt,
+			Message:  share.Message,
+		})
+	}
+
+	return result, nil
+}
+
+// MyUserShares is the resolver for the myUserShares field.
+func (r *queryResolver) MyUserShares(ctx context.Context, limit *int, offset *int) ([]*model.UserShare, error) {
+	userID := ctx.Value(userIDKey).(string)
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	limitVal := 20
+	if limit != nil {
+		limitVal = *limit
+	}
+	offsetVal := 0
+	if offset != nil {
+		offsetVal = *offset
+	}
+
+	shares, err := db.GetMyUserShares(uid, limitVal, offsetVal)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.UserShare
+	for _, share := range shares {
+		result = append(result, &model.UserShare{
+			ID:       share.ID.String(),
+			File:     convertUserShareFileToModel(share),
+			Owner:    convertUserShareOwnerToModel(share),
+			SharedWith: convertUserShareSharedWithToModel(share),
+			SharedAt: share.SharedAt,
+			Message:  share.Message,
+		})
+	}
+
+	return result, nil
+}
+
+// SearchUsers is the resolver for the searchUsers field.
+func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
+	users, err := db.SearchUsersByUsernameOrEmail(query, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.User
+	for _, user := range users {
+		result = append(result, convertUserToModel(user))
+	}
+
+	return result, nil
+}
+
+// Helper functions for converting database models to GraphQL models
+func convertUserToModel(user *db.User) *model.User {
+	return &model.User{
+		ID:        user.ID.String(),
+		Email:     user.Email,
+		Username:  user.Username,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+	}
+}
+
+func convertUserShareFileToModel(share *db.UserShareWithDetails) *model.UserFile {
+	return &model.UserFile{
+		ID:       share.FileID.String(),
+		Filename: share.Filename,
+		FileObject: &model.FileObject{
+			ID:        share.FileID.String(),
+			SizeBytes: int(share.FileSize),
+			MimeType:  share.MimeType,
+		},
+	}
+}
+
+func convertUserShareOwnerToModel(share *db.UserShareWithDetails) *model.User {
+	return &model.User{
+		ID:       share.OwnerID.String(),
+		Email:    share.OwnerEmail,
+		Username: share.OwnerUsername,
+	}
+}
+
+func convertUserShareSharedWithToModel(share *db.UserShareWithDetails) *model.User {
+	return &model.User{
+		ID:       share.SharedWithID.String(),
+		Email:    share.SharedWithEmail,
+		Username: share.SharedWithUsername,
+	}
+}
+
+func convertUserFileToModel(userFile *db.UserFileWithDetails) *model.UserFile {
+	return &model.UserFile{
+		ID:       userFile.ID.String(),
+		Filename: userFile.Filename,
+		FileObject: &model.FileObject{
+			ID:        userFile.FileObjectID.String(),
+			Hash:      userFile.Hash,
+			SizeBytes: int(userFile.SizeBytes),
+			MimeType:  userFile.MimeType,
+		},
+		Visibility: userFile.Visibility,
+		UploadedAt: userFile.UploadedAt,
+	}
 }
 
 // Mutation returns generated.MutationResolver implementation.

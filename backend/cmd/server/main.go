@@ -69,6 +69,9 @@ func main() {
 	// Public share endpoint (no auth required)
 	mux.HandleFunc("/s/", server.ServeShareHandler(db.DB, fileBasePath))
 
+	// Shared file download endpoint (authenticated)
+	mux.Handle("/api/v1/shared-files/", server.AuthMiddleware(server.SharedFileDownloadHandler(db.DB, fileBasePath)))
+
 	// GraphQL playground & endpoint
 	playgroundHandler := playground.Handler("GraphQL", "/graphql")
 	mux.HandleFunc("/playground", func(w http.ResponseWriter, r *http.Request) {

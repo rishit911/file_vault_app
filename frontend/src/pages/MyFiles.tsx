@@ -4,6 +4,7 @@ import { formatBytes, formatRelativeTime, getMimeTypeIcon, debounce } from '../u
 import FileUploader from '../components/FileUploader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ShareModal from '../components/ShareModal';
+import UserShareModal from '../components/UserShareModal';
 import FolderTree from '../components/FolderTree';
 import MoveToFolderModal from '../components/MoveToFolderModal';
 import { 
@@ -15,7 +16,8 @@ import {
   FileText,
   RefreshCw,
   FolderOpen,
-  Move
+  Move,
+  Users
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -69,6 +71,16 @@ export default function MyFiles() {
     folderId: null,
   });
   const [shareModal, setShareModal] = useState<{
+    isOpen: boolean;
+    fileId: string;
+    filename: string;
+  }>({
+    isOpen: false,
+    fileId: '',
+    filename: '',
+  });
+
+  const [userShareModal, setUserShareModal] = useState<{
     isOpen: boolean;
     fileId: string;
     filename: string;
@@ -203,6 +215,22 @@ export default function MyFiles() {
 
   const closeShareModal = () => {
     setShareModal({
+      isOpen: false,
+      fileId: '',
+      filename: '',
+    });
+  };
+
+  const handleUserShare = (fileId: string, filename: string) => {
+    setUserShareModal({
+      isOpen: true,
+      fileId,
+      filename,
+    });
+  };
+
+  const closeUserShareModal = () => {
+    setUserShareModal({
       isOpen: false,
       fileId: '',
       filename: '',
@@ -490,9 +518,17 @@ export default function MyFiles() {
                             type="button"
                             onClick={() => handleShare(file.id, file.filename)}
                             className="text-primary-600 hover:text-primary-900 dark:text-primary-400"
-                            title="Share file"
+                            title="Share file publicly"
                           >
                             <Share2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUserShare(file.id, file.filename)}
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400"
+                            title="Share with user"
+                          >
+                            <Users className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
@@ -548,6 +584,14 @@ export default function MyFiles() {
             onClose={closeShareModal}
             fileId={shareModal.fileId}
             filename={shareModal.filename}
+          />
+
+          {/* User Share Modal */}
+          <UserShareModal
+            isOpen={userShareModal.isOpen}
+            onClose={closeUserShareModal}
+            fileId={userShareModal.fileId}
+            filename={userShareModal.filename}
           />
 
           {/* Move to Folder Modal */}
