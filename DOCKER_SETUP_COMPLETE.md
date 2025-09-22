@@ -82,7 +82,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
 ## 👤 Default Users
-- **Admin**: admin@filevault.com / admin123
+- **Admin**: rishit@example.com / 12345678
 - **Test User**: testuser@example.com / testpass123
 
 ⚠️ **Change these passwords in production!**

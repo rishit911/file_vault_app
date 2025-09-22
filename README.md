@@ -38,8 +38,8 @@ docker compose up --build -d
 - **Backend API**: http://localhost:8080
 
 ### 4. Admin Login (Default)
-- **Email**: `admin@filevault.com`
-- **Password**: `admin123`
+- **Email**: `rishit@example.com`
+- **Password**: `12345678`
 
 ⚠️ **Security Note**: Change the default admin password after first login in production!
 
@@ -74,8 +74,8 @@ docker run --name filevault-db -e POSTGRES_PASSWORD=password -p 5432:5432 -d pos
 
 A default admin user is automatically created when the database is initialized:
 
-- **Email**: `admin@filevault.com`
-- **Password**: `admin123`
+- **Email**: `rishit@example.com`
+- **Password**: `12345678`
 
 **Alternative: Create Admin User Manually**
 ```bash

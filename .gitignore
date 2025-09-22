@@ -1,14 +1,24 @@
 # Node
 node_modules/
 dist/
-.env
-.env.local
-.env.dev
+build/
+.env*
+*.log
+
+# Python
+__pycache__/
+*.pyc
 
 # Go
 /bin/
 /pkg/
 /vendor/
+*.exe
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE
 .vscode/
@@ -36,9 +46,7 @@ data/files/*
 # OS temp files
 *.swp
 .DS_Store
-.vscode/
-.idea/
 
-# build
+# Build artifacts
 /build
 server.exe
