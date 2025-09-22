@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   GO_VERSION: 1.21
   NODE_VERSION: 20
@@ -35,36 +39,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Setup and verify Go environment
+      - name: Verify Go environment
         run: |
           go env
           go version
           go mod tidy
           go mod download
 
-      - name: Run go vet and format checks
+      - name: Run vet & formatting checks
         run: |
           go vet ./...
           fmt_out=$(gofmt -l .)
           if [ -n "$fmt_out" ]; then
-            echo "gofmt issues:"
+            echo "❌ gofmt issues:"
             echo "$fmt_out"
             exit 1
           fi
+          echo "✅ gofmt clean"
 
-      - name: Build
+      - name: Build backend
         run: go build ./...
 
-      - name: Run tests
+      - name: Run Go tests
         run: go test ./... -v
-
-      - name: Save Go modules cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
   frontend:
     needs: backend
@@ -92,28 +89,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run lint (if script exists)
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "ℹ️ No lint script, skipping"
+          fi
+
       - name: Build frontend
         run: npm run build
 
-      - name: Run tests (if available)
+      - name: Run tests (if script exists)
         run: |
           if npm run | grep -q "test"; then
             npm test
           else
-            echo "No test script found, skipping tests"
+            echo "ℹ️ No test script, skipping"
           fi
         continue-on-error: true
 
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+
   docs:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check documentation exists
+      - name: Check documentation
         run: |
           if [ ! -f "docs/documentation.md" ]; then
-            echo "Error: docs/documentation.md not found"
+            echo "❌ Error: docs/documentation.md not found"
             exit 1
           fi
-          echo "✅ Documentation file exists"
+          echo "✅ Documentation exists"
