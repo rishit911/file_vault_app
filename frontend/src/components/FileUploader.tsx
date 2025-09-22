@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { filesAPI } from '../api';
 import { formatBytes } from '../utils';
 import { Upload, X, CheckCircle, AlertCircle, File } from 'lucide-react';
+import { useRateLimit } from '../hooks/useRateLimit';
 import toast from 'react-hot-toast';
 
 interface FileUploadItem {
@@ -22,6 +23,7 @@ interface FileUploaderProps {
 export default function FileUploader({ onUploaded, className = '', selectedFolderId }: FileUploaderProps) {
   const [uploadItems, setUploadItems] = useState<FileUploadItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { isRateLimited, retryAfter } = useRateLimit();
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newItems: FileUploadItem[] = acceptedFiles.map((file) => ({
@@ -86,7 +88,7 @@ export default function FileUploader({ onUploaded, className = '', selectedFolde
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: true,
-    disabled: isUploading,
+    disabled: isUploading || isRateLimited,
   });
 
   const removeItem = (id: string) => {
@@ -111,7 +113,8 @@ export default function FileUploader({ onUploaded, className = '', selectedFolde
           <Upload className="h-8 w-8 text-gray-400" />
           <div className="text-center">
             <p className="text-lg font-medium text-gray-900 dark:text-white">
-              {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
+              {isRateLimited ? `Rate limited - retry in ${retryAfter}s` :
+               isDragActive ? 'Drop files here' : 'Drag & drop files here'}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               or click to select files (multiple files allowed)

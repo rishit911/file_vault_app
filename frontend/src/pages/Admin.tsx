@@ -213,6 +213,51 @@ export default function Admin() {
         <div className="p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Storage Usage Chart */}
+              <div className="card p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Storage Efficiency
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {stats ? formatBytes(stats.logicalStorageBytes) : '0 B'}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Logical Storage</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                      {stats ? formatBytes(stats.deduplicatedStorageBytes) : '0 B'}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Physical Storage</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                      {stats ? formatBytes(stats.dedupSavingsBytes) : '0 B'}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Space Saved</div>
+                  </div>
+                </div>
+                
+                {/* Simple Progress Bar Visualization */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Storage Efficiency</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {stats ? `${((stats.dedupSavingsBytes / Math.max(stats.logicalStorageBytes, 1)) * 100).toFixed(1)}%` : '0%'} saved
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                    <div 
+                      className="bg-gradient-to-r from-green-500 to-blue-500 h-3 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: stats ? `${Math.min((stats.dedupSavingsBytes / Math.max(stats.logicalStorageBytes, 1)) * 100, 100)}%` : '0%' 
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -242,22 +287,32 @@ export default function Admin() {
                 
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Recent Activity
+                    Recent Downloads
                   </h3>
                   <div className="space-y-3">
                     {downloads.slice(0, 5).map((download) => (
-                      <div key={download.id} className="flex items-center space-x-3">
-                        <Activity className="h-4 w-4 text-gray-400" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 dark:text-white truncate">
-                            File downloaded from {download.ip || 'unknown IP'}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {formatRelativeTime(download.createdAt)}
-                          </p>
+                      <div key={download.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <Download className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              File Download
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {download.ip || 'Unknown IP'} • {formatRelativeTime(download.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {download.shareId ? 'Shared' : 'Direct'}
                         </div>
                       </div>
                     ))}
+                    {downloads.length === 0 && (
+                      <p className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">
+                        No recent downloads
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

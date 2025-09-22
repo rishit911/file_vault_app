@@ -26,6 +26,19 @@ api.interceptors.response.use(
       toast.error("Session expired. Please login again.");
     } else if (error.response?.status === 403) {
       toast.error("Access denied. Insufficient permissions.");
+    } else if (error.response?.status === 413) {
+      // Quota exceeded
+      toast.error("Upload blocked: Storage quota exceeded. Please delete some files or contact support.");
+    } else if (error.response?.status === 429) {
+      // Rate limit exceeded
+      const retryAfter = error.response.headers['retry-after'];
+      const seconds = retryAfter ? parseInt(retryAfter) : 60;
+      toast.error(`Rate limit exceeded. Try again in ${seconds} seconds.`);
+      
+      // Disable buttons temporarily (emit custom event)
+      window.dispatchEvent(new CustomEvent('rateLimitExceeded', { 
+        detail: { retryAfter: seconds } 
+      }));
     } else if (error.code === "NETWORK_ERROR" || error.response?.status === 0) {
       toast.error("Cannot connect to server. Please check if the backend is running.");
     }

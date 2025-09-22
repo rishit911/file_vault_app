@@ -15,7 +15,7 @@ import (
 	"github.com/rishit911/file_vault_proj-backend/graph/generated"
 	"github.com/rishit911/file_vault_proj-backend/graph/model"
 	"github.com/rishit911/file_vault_proj-backend/internal/auth"
-	"github.com/rishit911/file_vault_proj-backend/internal/crypto"
+	"github.com/rishit911/file_vault_proj-backend/internal/cryptoutil"
 	"github.com/rishit911/file_vault_proj-backend/internal/db"
 	"github.com/rishit911/file_vault_proj-backend/internal/server"
 )
@@ -229,7 +229,7 @@ func (r *mutationResolver) CreateShare(ctx context.Context, input model.ShareCre
 	}
 
 	// generate token
-	token, err := crypto.GenerateShareToken(18)
+	token, err := cryptoutil.GenerateShareToken(18)
 	if err != nil {
 		return nil, err
 	}
@@ -1132,7 +1132,7 @@ func (r *mutationResolver) ShareFolder(ctx context.Context, folderID string, pub
 		return nil, fmt.Errorf("only folder owner can share")
 	}
 
-	token, err := crypto.GenerateShareToken(18)
+	token, err := cryptoutil.GenerateShareToken(18)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token")
 	}
