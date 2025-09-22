@@ -1,10 +1,7 @@
 package graph
 
 import (
-	"context"
 	"testing"
-
-	"github.com/rishit911/file_vault_proj-backend/internal/db"
 )
 
 func TestGraphQL_SearchFiles_Integration(t *testing.T) {
