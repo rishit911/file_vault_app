@@ -17,6 +17,15 @@ dist/
 
 # Docker
 docker-compose.override.yml
+.env.docker.local
+backend/.env.docker.local
+
+# ignore local docker env file and uploaded files
+.env.docker.local
+backend/.env.docker
+
+# Data files
+data/files/*
 
 # build
 /build
