@@ -8,46 +8,46 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID  `db:"id"`
-	Email     string     `db:"email"`
-	Username  *string    `db:"username"`
-	Role      string     `db:"role"`
-	CreatedAt time.Time  `db:"created_at"`
+	ID        uuid.UUID `db:"id"`
+	Email     string    `db:"email"`
+	Username  *string   `db:"username"`
+	Role      string    `db:"role"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type UserShare struct {
-	ID           uuid.UUID  `db:"id"`
-	FileID       uuid.UUID  `db:"file_id"`
-	OwnerID      uuid.UUID  `db:"owner_id"`
-	SharedWithID uuid.UUID  `db:"shared_with_id"`
-	SharedAt     time.Time  `db:"shared_at"`
-	Message      *string    `db:"message"`
+	ID           uuid.UUID `db:"id"`
+	FileID       uuid.UUID `db:"file_id"`
+	OwnerID      uuid.UUID `db:"owner_id"`
+	SharedWithID uuid.UUID `db:"shared_with_id"`
+	SharedAt     time.Time `db:"shared_at"`
+	Message      *string   `db:"message"`
 }
 
 type UserShareWithDetails struct {
 	UserShare
-	OwnerEmail      string    `db:"owner_email"`
-	OwnerUsername   *string   `db:"owner_username"`
-	SharedWithEmail string    `db:"shared_with_email"`
+	OwnerEmail         string  `db:"owner_email"`
+	OwnerUsername      *string `db:"owner_username"`
+	SharedWithEmail    string  `db:"shared_with_email"`
 	SharedWithUsername *string `db:"shared_with_username"`
-	Filename        string    `db:"filename"`
-	FileSize        int64     `db:"file_size"`
-	MimeType        *string   `db:"mime_type"`
+	Filename           string  `db:"filename"`
+	FileSize           int64   `db:"file_size"`
+	MimeType           *string `db:"mime_type"`
 }
 
 type UserFileWithDetails struct {
-	ID           uuid.UUID  `db:"id"`
-	UserID       uuid.UUID  `db:"user_id"`
-	FileObjectID uuid.UUID  `db:"file_object_id"`
-	Filename     string     `db:"filename"`
-	Visibility   string     `db:"visibility"`
-	UploadedAt   time.Time  `db:"uploaded_at"`
-	Hash         string     `db:"hash"`
-	StoragePath  string     `db:"storage_path"`
-	SizeBytes    int64      `db:"size_bytes"`
-	MimeType     *string    `db:"mime_type"`
-	RefCount     int        `db:"ref_count"`
-	CreatedAt    time.Time  `db:"created_at"`
+	ID           uuid.UUID `db:"id"`
+	UserID       uuid.UUID `db:"user_id"`
+	FileObjectID uuid.UUID `db:"file_object_id"`
+	Filename     string    `db:"filename"`
+	Visibility   string    `db:"visibility"`
+	UploadedAt   time.Time `db:"uploaded_at"`
+	Hash         string    `db:"hash"`
+	StoragePath  string    `db:"storage_path"`
+	SizeBytes    int64     `db:"size_bytes"`
+	MimeType     *string   `db:"mime_type"`
+	RefCount     int       `db:"ref_count"`
+	CreatedAt    time.Time `db:"created_at"`
 }
 
 func CreateUserShare(fileID, ownerID, sharedWithID uuid.UUID, message *string) (*UserShare, error) {
@@ -260,13 +260,13 @@ func GetUserFileByFileID(userFileID, userID uuid.UUID) (*UserFileWithDetails, er
 // Additional functions needed for shared file downloads
 
 type FileObject struct {
-	ID          uuid.UUID  `db:"id"`
-	Hash        string     `db:"hash"`
-	StoragePath string     `db:"storage_path"`
-	SizeBytes   int64      `db:"size_bytes"`
-	MimeType    *string    `db:"mime_type"`
-	RefCount    int        `db:"ref_count"`
-	CreatedAt   time.Time  `db:"created_at"`
+	ID          uuid.UUID `db:"id"`
+	Hash        string    `db:"hash"`
+	StoragePath string    `db:"storage_path"`
+	SizeBytes   int64     `db:"size_bytes"`
+	MimeType    *string   `db:"mime_type"`
+	RefCount    int       `db:"ref_count"`
+	CreatedAt   time.Time `db:"created_at"`
 }
 
 func GetUserShareByID(shareID, userID uuid.UUID) (*UserShare, error) {
@@ -293,7 +293,7 @@ func GetFileObjectByID(fileObjectID uuid.UUID) (*FileObject, error) {
 		WHERE id = $1
 	`
 	err := DB.QueryRow(query, fileObjectID).Scan(
-		&fileObject.ID, &fileObject.Hash, &fileObject.StoragePath, &fileObject.SizeBytes, 
+		&fileObject.ID, &fileObject.Hash, &fileObject.StoragePath, &fileObject.SizeBytes,
 		&fileObject.MimeType, &fileObject.RefCount, &fileObject.CreatedAt,
 	)
 	if err != nil {

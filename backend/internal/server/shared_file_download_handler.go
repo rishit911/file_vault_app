@@ -31,36 +31,36 @@ func SharedFileDownloadHandler(dbConn *sqlx.DB, fileBasePath string) http.Handle
 			return
 		}
 
-	currentUserID, err := uuid.Parse(userID)
-	if err != nil {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
-		return
-	}
-
-	// Get the user share and verify access
-	userShare, err := db.GetUserShareByID(shareID, currentUserID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			http.Error(w, "Share not found or access denied", http.StatusNotFound)
-		} else {
-			http.Error(w, "Database error", http.StatusInternalServerError)
+		currentUserID, err := uuid.Parse(userID)
+		if err != nil {
+			http.Error(w, "Invalid user ID", http.StatusBadRequest)
+			return
 		}
-		return
-	}
 
-	// Get file details
-	fileObject, err := db.GetFileObjectByID(userShare.FileID)
-	if err != nil {
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
+		// Get the user share and verify access
+		userShare, err := db.GetUserShareByID(shareID, currentUserID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Share not found or access denied", http.StatusNotFound)
+			} else {
+				http.Error(w, "Database error", http.StatusInternalServerError)
+			}
+			return
+		}
 
-	// Get the original filename from user_files
-	userFile, err := db.GetUserFileByFileObjectID(userShare.FileID, userShare.OwnerID)
-	if err != nil {
-		http.Error(w, "File details not found", http.StatusNotFound)
-		return
-	}
+		// Get file details
+		fileObject, err := db.GetFileObjectByID(userShare.FileID)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+
+		// Get the original filename from user_files
+		userFile, err := db.GetUserFileByFileObjectID(userShare.FileID, userShare.OwnerID)
+		if err != nil {
+			http.Error(w, "File details not found", http.StatusNotFound)
+			return
+		}
 
 		// Construct file path
 		filePath := filepath.Join(fileBasePath, fileObject.StoragePath)

@@ -31,7 +31,7 @@ func (r *mutationResolver) Register(ctx context.Context, email string, password 
 	}
 
 	id := uuid.New().String()
-	
+
 	var query string
 	var args []interface{}
 	if username != nil {
@@ -41,7 +41,7 @@ func (r *mutationResolver) Register(ctx context.Context, email string, password 
 		query = `INSERT INTO users (id, email, password_hash) VALUES ($1,$2,$3)`
 		args = []interface{}{id, email, hashed}
 	}
-	
+
 	_, err = r.DB.Exec(query, args...)
 	if err != nil {
 		return nil, err
@@ -1389,12 +1389,12 @@ func (r *mutationResolver) ShareWithUser(ctx context.Context, input model.ShareW
 	}
 
 	return &model.UserShare{
-		ID:       share.ID.String(),
-		File:     convertUserFileToModel(userFile),
-		Owner:    convertUserToModel(owner),
+		ID:         share.ID.String(),
+		File:       convertUserFileToModel(userFile),
+		Owner:      convertUserToModel(owner),
 		SharedWith: convertUserToModel(targetUser),
-		SharedAt: share.SharedAt,
-		Message:  share.Message,
+		SharedAt:   share.SharedAt,
+		Message:    share.Message,
 	}, nil
 }
 
@@ -1444,12 +1444,12 @@ func (r *queryResolver) SharedWithMe(ctx context.Context, limit *int, offset *in
 	var result []*model.UserShare
 	for _, share := range shares {
 		result = append(result, &model.UserShare{
-			ID:       share.ID.String(),
-			File:     convertUserShareFileToModel(share),
-			Owner:    convertUserShareOwnerToModel(share),
+			ID:         share.ID.String(),
+			File:       convertUserShareFileToModel(share),
+			Owner:      convertUserShareOwnerToModel(share),
 			SharedWith: convertUserShareSharedWithToModel(share),
-			SharedAt: share.SharedAt,
-			Message:  share.Message,
+			SharedAt:   share.SharedAt,
+			Message:    share.Message,
 		})
 	}
 
@@ -1481,12 +1481,12 @@ func (r *queryResolver) MyUserShares(ctx context.Context, limit *int, offset *in
 	var result []*model.UserShare
 	for _, share := range shares {
 		result = append(result, &model.UserShare{
-			ID:       share.ID.String(),
-			File:     convertUserShareFileToModel(share),
-			Owner:    convertUserShareOwnerToModel(share),
+			ID:         share.ID.String(),
+			File:       convertUserShareFileToModel(share),
+			Owner:      convertUserShareOwnerToModel(share),
 			SharedWith: convertUserShareSharedWithToModel(share),
-			SharedAt: share.SharedAt,
-			Message:  share.Message,
+			SharedAt:   share.SharedAt,
+			Message:    share.Message,
 		})
 	}
 
