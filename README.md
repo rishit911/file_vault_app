@@ -24,17 +24,33 @@ git clone https://github.com/BalkanID-University/vit-2026-capstone-internship-hi
 cd vit-2026-capstone-internship-hiring-task-rishit911
 ```
 
-### 2. Start the Application
+### 2. Create Required Environment Files
 ```bash
-docker compose up --build -d
+# Create backend environment file (required for Docker Compose)
+cp backend/.env.example backend/.env.dev
 ```
 
-### 3. Access the Application
+### 3. Start the Application
+```bash
+# Use the --env-file flag to ensure environment variables are loaded
+docker compose --env-file .env.docker up --build -d
+```
+
+### 4. Verify Services are Running
+```bash
+# Check container status
+docker compose --env-file .env.docker ps
+
+# View logs (optional)
+docker compose --env-file .env.docker logs --tail=10
+```
+
+### 5. Access the Application
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080
 - **Health Check**: http://localhost:8080/health
 
-### 4. 🔑 Admin Login Credentials
+### 6. 🔑 Admin Login Credentials
 ```
 Email: rishit@example.com
 Password: 12345678
@@ -42,9 +58,22 @@ Password: 12345678
 
 ⚠️ **Important**: Change the default admin password after first login in production!
 
-### 5. Stop the Application
+### 7. Stop the Application
 ```bash
-docker compose down
+docker compose --env-file .env.docker down
+```
+
+### 🚨 Troubleshooting Docker Setup
+
+**If you see environment variable warnings:**
+- Always use `--env-file .env.docker` flag with docker compose commands
+- Ensure `backend/.env.dev` file exists (copy from `.env.example`)
+
+**If containers fail to start:**
+```bash
+# Clean up and restart
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker up --build -d
 ```
 
 ## 💻 Local Development Setup
@@ -116,24 +145,29 @@ Password: 12345678
 
 ## 🐳 Docker Commands
 
+**Important**: Always use `--env-file .env.docker` flag with all docker compose commands.
+
 ```bash
 # Start all services
-docker compose up --build -d
+docker compose --env-file .env.docker up --build -d
 
 # View service status
-docker compose ps
+docker compose --env-file .env.docker ps
 
 # View logs
-docker compose logs -f backend frontend db
+docker compose --env-file .env.docker logs -f backend frontend db
+
+# View recent logs
+docker compose --env-file .env.docker logs --tail=10
 
 # Stop services
-docker compose down
+docker compose --env-file .env.docker down
 
 # Clean up (removes volumes and data)
-docker compose down -v
+docker compose --env-file .env.docker down -v
 
 # Rebuild containers
-docker compose build --no-cache
+docker compose --env-file .env.docker build --no-cache
 ```
 
 ## 👤 Admin User Management
@@ -212,31 +246,52 @@ vit-2026-capstone-internship-hiring-task-rishit911/
 
 ### Common Issues
 
+**Environment Variable Warnings**
+```bash
+# Always use the --env-file flag
+docker compose --env-file .env.docker up -d
+
+# Ensure backend environment file exists
+cp backend/.env.example backend/.env.dev
+```
+
 **Port Already in Use**
 ```bash
 # Check what's using the ports
 netstat -tulpn | grep :3000
 netstat -tulpn | grep :8080
 
-# Kill processes using the ports
+# Kill processes using the ports (Linux/Mac)
 sudo kill -9 $(lsof -t -i:3000)
 sudo kill -9 $(lsof -t -i:8080)
+
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
 ```
 
 **Database Connection Issues**
 ```bash
 # Check if PostgreSQL is running
-docker compose ps
+docker compose --env-file .env.docker ps
 
 # View database logs
-docker compose logs db
+docker compose --env-file .env.docker logs db
 
 # Reset database
-docker compose down -v
-docker compose up -d
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker up -d
 ```
 
-**Permission Issues**
+**Container Build Issues**
+```bash
+# Clean rebuild
+docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker build --no-cache
+docker compose --env-file .env.docker up -d
+```
+
+**Permission Issues (Linux/Mac)**
 ```bash
 # Fix file permissions
 sudo chown -R $USER:$USER data/files/
@@ -267,6 +322,45 @@ npm test
 ## 📝 License
 
 This project is licensed under the MIT License.
+
+## ✅ Verified Setup Steps (Tested)
+
+These are the exact steps that have been tested and verified to work:
+
+### Step 1: Clone and Navigate
+```bash
+git clone https://github.com/BalkanID-University/vit-2026-capstone-internship-hiring-task-rishit911.git
+cd vit-2026-capstone-internship-hiring-task-rishit911
+```
+
+### Step 2: Create Backend Environment File
+```bash
+cp backend/.env.example backend/.env.dev
+```
+
+### Step 3: Start with Environment File
+```bash
+docker compose --env-file .env.docker up -d
+```
+
+### Step 4: Verify All Services
+```bash
+docker compose --env-file .env.docker ps
+```
+
+You should see:
+- `fv-postgres` - healthy on port 5432
+- `fv-backend` - healthy on port 8080  
+- `fv-frontend` - healthy on port 3000
+
+### Step 5: Access Application
+- Open http://localhost:3000
+- Login with: `rishit@example.com` / `12345678`
+
+### Step 6: View Logs (Optional)
+```bash
+docker compose --env-file .env.docker logs --tail=10
+```
 
 ---
 
