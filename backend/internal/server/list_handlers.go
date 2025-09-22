@@ -71,13 +71,13 @@ WHERE uf.user_id = $1`
 // buildRESTFilterSQL builds filter SQL from HTTP query parameters
 func buildRESTFilterSQL(r *http.Request, args *[]interface{}) string {
 	clauses := []string{}
-	
+
 	// filename contains
 	if filename := r.URL.Query().Get("filename"); filename != "" {
 		*args = append(*args, "%"+filename+"%")
 		clauses = append(clauses, fmt.Sprintf(" AND uf.filename ILIKE $%d", len(*args)))
 	}
-	
+
 	// mime types (comma-separated)
 	if mimeTypes := r.URL.Query().Get("mime_types"); mimeTypes != "" {
 		types := strings.Split(mimeTypes, ",")
@@ -87,7 +87,7 @@ func buildRESTFilterSQL(r *http.Request, args *[]interface{}) string {
 		*args = append(*args, pq.Array(types))
 		clauses = append(clauses, fmt.Sprintf(" AND fo.mime_type = ANY($%d)", len(*args)))
 	}
-	
+
 	// size range
 	if minSizeStr := r.URL.Query().Get("min_size"); minSizeStr != "" {
 		if minSize, err := strconv.Atoi(minSizeStr); err == nil {
@@ -101,7 +101,7 @@ func buildRESTFilterSQL(r *http.Request, args *[]interface{}) string {
 			clauses = append(clauses, fmt.Sprintf(" AND fo.size_bytes <= $%d", len(*args)))
 		}
 	}
-	
+
 	// date range
 	if dateFromStr := r.URL.Query().Get("date_from"); dateFromStr != "" {
 		if dateFrom, err := time.Parse(time.RFC3339, dateFromStr); err == nil {
@@ -115,7 +115,7 @@ func buildRESTFilterSQL(r *http.Request, args *[]interface{}) string {
 			clauses = append(clauses, fmt.Sprintf(" AND uf.uploaded_at <= $%d", len(*args)))
 		}
 	}
-	
+
 	// tags (comma-separated)
 	if tagsStr := r.URL.Query().Get("tags"); tagsStr != "" {
 		tags := strings.Split(tagsStr, ",")
@@ -125,12 +125,12 @@ func buildRESTFilterSQL(r *http.Request, args *[]interface{}) string {
 		*args = append(*args, pq.Array(tags))
 		clauses = append(clauses, fmt.Sprintf(" AND EXISTS (SELECT 1 FROM file_tags ft JOIN tags t ON ft.tag_id = t.id WHERE ft.file_id = fo.id AND t.name = ANY($%d))", len(*args)))
 	}
-	
+
 	// uploader email
 	if uploaderEmail := r.URL.Query().Get("uploader_email"); uploaderEmail != "" {
 		*args = append(*args, "%"+uploaderEmail+"%")
 		clauses = append(clauses, fmt.Sprintf(" AND EXISTS (SELECT 1 FROM users u WHERE u.id = uf.user_id AND u.email ILIKE $%d)", len(*args)))
 	}
-	
+
 	return strings.Join(clauses, "")
 }

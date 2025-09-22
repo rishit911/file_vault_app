@@ -47,7 +47,7 @@ func main() {
 	})
 	mux.HandleFunc("/api/v1/auth/register", server.RegisterHandler(db.DB))
 	mux.HandleFunc("/api/v1/auth/login", server.LoginHandler(db.DB))
-	
+
 	// protected auth routes
 	mux.Handle("/api/v1/auth/me", server.AuthMiddleware(server.MeHandler(db.DB)))
 

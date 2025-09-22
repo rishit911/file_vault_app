@@ -184,13 +184,13 @@ func ListSharesByOwner(ctx context.Context, db *sql.DB, ownerID string, limit, o
 		ORDER BY created_at DESC 
 		LIMIT $2 OFFSET $3
 	`
-	
+
 	rows, err := db.QueryContext(ctx, q, ownerID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var shares []Share
 	for rows.Next() {
 		var s Share
@@ -210,10 +210,10 @@ func ListSharesByOwner(ctx context.Context, db *sql.DB, ownerID string, limit, o
 		}
 		shares = append(shares, s)
 	}
-	
+
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	
+
 	return shares, nil
 }

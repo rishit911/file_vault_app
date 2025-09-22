@@ -38,8 +38,8 @@ func CreateTag(ctx context.Context, db *sqlx.DB, name string) (*Tag, error) {
 	}
 
 	var tag Tag
-	err := db.GetContext(ctx, &tag, 
-		"INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id, name", 
+	err := db.GetContext(ctx, &tag,
+		"INSERT INTO tags (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id, name",
 		name)
 	return &tag, err
 }
@@ -78,8 +78,8 @@ func AddTagToFile(ctx context.Context, db *sqlx.DB, fileID, tagName string) erro
 	}
 
 	// Add the file-tag relationship
-	_, err = db.ExecContext(ctx, 
-		"INSERT INTO file_tags (file_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", 
+	_, err = db.ExecContext(ctx,
+		"INSERT INTO file_tags (file_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
 		fileID, tag.ID)
 	return err
 }
@@ -102,7 +102,7 @@ func GetFilesByTag(ctx context.Context, db *sqlx.DB, tagName string, limit, offs
 		ID         string `db:"id"`
 		UploadedAt string `db:"uploaded_at"`
 	}
-	
+
 	var results []fileResult
 	query := `
 		SELECT DISTINCT uf.id, uf.uploaded_at
@@ -112,12 +112,12 @@ func GetFilesByTag(ctx context.Context, db *sqlx.DB, tagName string, limit, offs
 		WHERE lower(t.name) = lower($1)
 		ORDER BY uf.uploaded_at DESC
 		LIMIT $2 OFFSET $3`
-	
+
 	err := db.SelectContext(ctx, &results, query, tagName, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Extract just the IDs
 	fileIDs := make([]string, len(results))
 	for i, result := range results {
@@ -132,7 +132,7 @@ func GetFilesByTag(ctx context.Context, db *sqlx.DB, tagName string, limit, offs
 		JOIN file_tags ft ON uf.file_object_id = ft.file_id
 		JOIN tags t ON ft.tag_id = t.id
 		WHERE lower(t.name) = lower($1)`
-	
+
 	err = db.GetContext(ctx, &totalCount, countQuery, tagName)
 	if err != nil {
 		return nil, 0, err
@@ -167,7 +167,7 @@ func GetFilesWithTags(ctx context.Context, db *sqlx.DB, tagNames []string, limit
 		WHERE lower(t.name) IN (` + strings.Join(placeholders, ",") + `)
 		ORDER BY uf.uploaded_at DESC
 		LIMIT $` + string(rune(len(tagNames)+1)) + ` OFFSET $` + string(rune(len(tagNames)+2))
-	
+
 	err := db.SelectContext(ctx, &fileIDs, query, args...)
 	if err != nil {
 		return nil, 0, err
@@ -181,7 +181,7 @@ func GetFilesWithTags(ctx context.Context, db *sqlx.DB, tagNames []string, limit
 		JOIN file_tags ft ON uf.file_object_id = ft.file_id
 		JOIN tags t ON ft.tag_id = t.id
 		WHERE lower(t.name) IN (` + strings.Join(placeholders, ",") + `)`
-	
+
 	countArgs := args[:len(tagNames)]
 	err = db.GetContext(ctx, &totalCount, countQuery, countArgs...)
 	if err != nil {

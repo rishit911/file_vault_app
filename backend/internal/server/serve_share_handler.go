@@ -67,7 +67,7 @@ func ServeShareHandler(dbConn *sqlx.DB, fileBasePath string) http.HandlerFunc {
 			json.NewEncoder(w).Encode(files)
 			return
 		}
-		
+
 		if share.FileID == nil {
 			http.Error(w, "shared object is not a file or folder", http.StatusNotImplemented)
 			return

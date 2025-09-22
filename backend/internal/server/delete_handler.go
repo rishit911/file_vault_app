@@ -58,7 +58,7 @@ func DeleteFileHandler(db *sqlx.DB) http.HandlerFunc {
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
-		
+
 		// get file size for storage quota update
 		if err := tx.Get(&fileSize, "SELECT size_bytes FROM file_objects WHERE id=$1", fileObjectID); err != nil {
 			tx.Rollback()

@@ -34,14 +34,14 @@ func UpdateUserStorageUsedDelta(ctx context.Context, db *sql.DB, userID string, 
 func GetUserQuotaBytes() int64 {
 	// default 10 MB
 	const defaultQuota = 10 * 1024 * 1024
-	
+
 	// Read from environment if set
 	if quotaStr := os.Getenv("STORAGE_QUOTA_BYTES"); quotaStr != "" {
 		if quota, err := strconv.ParseInt(quotaStr, 10, 64); err == nil && quota > 0 {
 			return quota
 		}
 	}
-	
+
 	return defaultQuota
 }
 
@@ -51,11 +51,11 @@ func CheckStorageQuota(ctx context.Context, db *sql.DB, userID string, deltaByte
 	if err != nil {
 		return false, 0, err
 	}
-	
+
 	quota := GetUserQuotaBytes()
 	if used+deltaBytes > quota {
 		return false, used, ErrQuotaExceeded
 	}
-	
+
 	return true, used, nil
 }

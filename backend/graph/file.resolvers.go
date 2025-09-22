@@ -48,7 +48,7 @@ func buildFilterSQL(f *model.FileFilter, args *[]interface{}) string {
 		*args = append(*args, *f.DateTo)
 		idx++
 	}
-	
+
 	// tags: check any tag matches (EXISTS with t.name = ANY($N))
 	if f.Tags != nil && len(f.Tags) > 0 {
 		parts = append(parts, fmt.Sprintf("EXISTS (SELECT 1 FROM file_tags ft JOIN tags t ON ft.tag_id = t.id WHERE ft.file_id = fo.id AND t.name = ANY($%d))", idx))

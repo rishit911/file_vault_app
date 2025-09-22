@@ -208,7 +208,7 @@ func (r *mutationResolver) CreateShare(ctx context.Context, input model.ShareCre
 	userID := userIDVal.(string)
 
 	var fileObjectID *string
-	
+
 	// validate ownership if fileId provided and convert user_files.id to file_objects.id
 	if input.FileID != nil {
 		// Check ownership using user_files.id
@@ -219,7 +219,7 @@ func (r *mutationResolver) CreateShare(ctx context.Context, input model.ShareCre
 		if ownerID != userID {
 			return nil, fmt.Errorf("only uploader can share")
 		}
-		
+
 		// Convert user_files.id to file_objects.id for the shares table
 		fileObjID, err := db.GetFileObjectID(ctx, r.DB.DB, *input.FileID)
 		if err != nil {
@@ -240,7 +240,7 @@ func (r *mutationResolver) CreateShare(ctx context.Context, input model.ShareCre
 	}
 
 	share := db.Share{
-		FileID:       fileObjectID,  // Use file_objects.id instead of user_files.id
+		FileID:       fileObjectID, // Use file_objects.id instead of user_files.id
 		FolderID:     input.FolderID,
 		OwnerID:      userID,
 		Token:        token,
@@ -729,7 +729,7 @@ func (r *queryResolver) AdminDownloads(ctx context.Context, from *time.Time, to 
 	for rows.Next() {
 		var download model.DownloadRecord
 		var shareID, downloaderID, ip, userAgent *string
-		
+
 		err := rows.Scan(
 			&download.ID,
 			&shareID,
@@ -778,7 +778,7 @@ func (r *queryResolver) Stats(ctx context.Context) (*model.StorageStats, error) 
 
 	// Get user's file statistics
 	var totalDeduped, original int64
-	
+
 	// Get total deduplicated storage (unique file objects for this user)
 	err := r.DB.Get(&totalDeduped, `
 		SELECT COALESCE(SUM(DISTINCT fo.size_bytes), 0) 
@@ -913,7 +913,7 @@ func (r *queryResolver) Tags(ctx context.Context) ([]*model.Tag, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	result := make([]*model.Tag, len(tags))
 	for i, tag := range tags {
 		result[i] = &model.Tag{
@@ -1232,7 +1232,7 @@ func (r *Resolver) getTagsForUserFile(ctx context.Context, fileObjectID string) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	result := make([]*model.Tag, len(tags))
 	for i, tag := range tags {
 		result[i] = &model.Tag{
@@ -1260,7 +1260,7 @@ func (r *Resolver) getUserFileByID(ctx context.Context, userFileID string) (*mod
 		RefCount     int    `db:"ref_count"`
 		CreatedAt    string `db:"created_at"`
 	}
-	
+
 	var row userFileRow
 	query := `
 		SELECT 
@@ -1281,16 +1281,16 @@ func (r *Resolver) getUserFileByID(ctx context.Context, userFileID string) (*mod
 		JOIN users u ON uf.user_id = u.id
 		JOIN file_objects fo ON uf.file_object_id = fo.id
 		WHERE uf.id = $1`
-	
+
 	err := r.DB.GetContext(ctx, &row, query, userFileID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Parse timestamps
 	uploadedAt, _ := time.Parse(time.RFC3339, row.UploadedAt)
 	createdAt, _ := time.Parse(time.RFC3339, row.CreatedAt)
-	
+
 	return &model.UserFile{
 		ID: row.UserFileID,
 		User: &model.User{
@@ -1312,8 +1312,6 @@ func (r *Resolver) getUserFileByID(ctx context.Context, userFileID string) (*mod
 		UploadedAt: uploadedAt,
 	}, nil
 }
-
-
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
