@@ -311,8 +311,6 @@ func GetFileObjectByID(fileObjectID uuid.UUID) (*FileObject, error) {
 	return fileObject, nil
 }
 
-
-
 func GetUserFileByFileObjectID(fileObjectID, ownerID uuid.UUID) (*UserFileWithDetails, error) {
 	userFile := &UserFileWithDetails{}
 	query := `
